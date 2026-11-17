@@ -1,50 +1,95 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+Sync Impact Report
+- Version change: template → 1.0.0 (adopción inicial)
+- Principios definidos: I. Ciclo de préstamo completo; II. Integridad de datos y reglas en el servidor;
+  III. Seguridad y control de acceso por rol; IV. API REST explícita y documentada;
+  V. Pruebas funcionales verificables; VI. Trazabilidad y Git disciplinado; VII. Simplicidad
+- Secciones añadidas: Restricciones técnicas; Flujo de desarrollo
+- Secciones eliminadas: ninguna
+- TODOs diferidos: ninguno
+-->
+
+# Constitución — Sistema de Préstamo de Equipos y Recursos (PF-03)
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Ciclo de préstamo completo (NO NEGOCIABLE)
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+La aplicación MUST implementar el ciclo completo: consulta de disponibilidad → solicitud →
+evaluación → asignación/entrega → seguimiento → devolución → historial y consulta consolidada.
+Un CRUD genérico de recursos, pantallas con datos simulados o una API sin interfaz NO cumplen.
+Las operaciones CRUD solo se exponen cuando el proceso lo justifica (p. ej., un préstamo nunca se
+"elimina": se cierra o se cancela).
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+**Rationale**: Las condiciones CA-01 a CA-06 de la guía definen el producto mínimo.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### II. Integridad de datos y reglas de negocio en el servidor
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+Toda regla de negocio (disponibilidad, transiciones de estado, solapamiento de fechas, permisos)
+MUST validarse en el backend, independientemente del frontend. Un recurso MUST NOT quedar asignado
+simultáneamente a préstamos incompatibles; la verificación MUST ser atómica (transacción y/o
+restricción de base de datos) para resistir solicitudes concurrentes. Los cambios de estado
+MUST seguir una máquina de estados explícita y quedar registrados con usuario y fecha.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+**Rationale**: La guía exige que la integridad se mantenga aunque la petición no venga de la UI.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### III. Seguridad y control de acceso por rol
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+La autenticación MUST usar JWT y contraseñas con hash seguro. Cada endpoint MUST declarar qué
+roles (SOLICITANTE, RESPONSABLE, COORDINACION) pueden usarlo; un solicitante solo ve y modifica
+sus propias solicitudes. Prohibido versionar secretos: `.env` fuera de Git y `.env.example` sin
+valores reales. Datos de prueba MUST ser ficticios. Los mensajes de error MUST NOT exponer trazas,
+SQL ni datos sensibles.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+### IV. API REST explícita y documentada
+
+Recursos con sustantivos en plural, métodos HTTP semánticos y códigos de estado correctos
+(200, 201, 204, 400/422, 401, 403, 404, 409). Los errores MUST usar un formato JSON uniforme
+(`{"detail": ..., "code": ...}`). La especificación OpenAPI generada por FastAPI (`/docs`) MUST
+mantenerse coherente con `docs/diseno.md` y la tabla de endpoints del README.
+
+### V. Pruebas funcionales verificables
+
+Cada condición CA-XX y cada prueba mínima (1–12) de la guía MUST tener una prueba funcional
+documentada con: ID, requisito, precondiciones, pasos, datos, resultado esperado/obtenido, estado,
+evidencia, método y código HTTP. Las evidencias se guardan en `evidencias/`. La automatización es
+opcional; si se añaden pruebas automáticas, complementan pero no sustituyen la documentación.
+
+### VI. Trazabilidad y Git disciplinado
+
+Todo cambio se desarrolla en una rama y se integra por pull request que documente propósito,
+cambios, pruebas efectuadas y requisitos (`RF-XX`/`CA-XX`) asociados. Commits pequeños y
+descriptivos (estilo Conventional Commits en español). `docs/trazabilidad.md` MUST vincular
+CA → RF → implementación → PR → prueba y actualizarse con cada PR relevante.
+
+### VII. Simplicidad
+
+Se prefiere la solución más simple que cumpla los requisitos aprobados (YAGNI). Extensiones fuera
+del alcance (QR/RFID, notificaciones, sanciones, inventarios externos) MUST NOT implementarse
+antes de completar CA-01 a CA-06.
+
+## Restricciones técnicas
+
+- **Frontend**: React (Vite) + TypeScript, consumiendo la API real mediante HTTP.
+- **Backend**: Python 3.12 + FastAPI, Pydantic para validación, SQLAlchemy 2.x + Alembic para
+  persistencia y migraciones.
+- **Base de datos**: PostgreSQL.
+- **Ejecución local reproducible** con instrucciones en el README; no se exige Docker ni nube.
+- Idioma: documentación y UI en español; identificadores de código en inglés.
+
+## Flujo de desarrollo
+
+1. Especificación (`/speckit-specify`, `/speckit-clarify`) → alimenta `docs/requisitos.md`.
+2. Plan (`/speckit-plan`) → alimenta `docs/diseno.md` (arquitectura, modelo de datos, API).
+3. Tareas (`/speckit-tasks`) → implementación incremental por historia de usuario en ramas/PR.
+4. Pruebas funcionales y evidencias por cada CA antes de cerrar la feature.
+5. Actualizar `docs/trazabilidad.md` y el README antes de la entrega.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+Esta constitución prevalece sobre otras prácticas del proyecto. Toda enmienda MUST documentarse
+en este archivo con incremento de versión semántica (MAJOR: eliminación/redefinición de principios;
+MINOR: principio o sección nueva; PATCH: aclaraciones). Cada PR MUST verificar el cumplimiento de
+los principios; cualquier complejidad adicional MUST justificarse en el plan correspondiente.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0.0 | **Ratified**: 2026-11-16 | **Last Amended**: 2026-11-16
