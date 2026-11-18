@@ -41,7 +41,7 @@ export default function NewRequestPage() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['loans'] })
       void queryClient.invalidateQueries({ queryKey: ['resources'] })
-      toast.success('Solicitud enviada. Te avisaremos cuando sea evaluada.')
+      toast.success('Solicitud enviada. Consulta su estado aquí en «Mis solicitudes».')
       navigate('/mis-solicitudes')
     },
   })

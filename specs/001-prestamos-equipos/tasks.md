@@ -45,7 +45,7 @@ cada historia. Las pruebas automatizadas son **opcionales** y están en la fase 
 **Purpose**: Repositorio, reglas de colaboración y contrato aprobado antes de paralelizar.
 
 - [x] T001 [A] Crear repositorio en GitHub con `gh repo create`, subir `main` y la rama `001-prestamos-equipos`, e invitar a Persona B como colaboradora
-- [ ] T002 [A] Configurar protección de `main` en GitHub (requerir PR y 1 aprobación, sin push directo) y documentar la regla en `docs/contribucion.md`
+- [x] T002 [A] Configurar protección de `main` en GitHub (requerir PR y 1 aprobación, sin push directo) y documentar la regla en `docs/contribucion.md`
 - [x] T003 [P] [B] Crear plantilla de PR en `.github/pull_request_template.md` con secciones: Propósito, Cambios, Requisitos (RF/CA), Pruebas efectuadas (PF-XX + evidencia), Checklist de constitución (reglas en servidor, permisos por rol, sin secretos, trazabilidad actualizada)
 - [x] T004 [P] [A] Crear estructura de carpetas raíz `backend/`, `frontend/`, `docs/`, `docs/pruebas/`, `evidencias/` (con `.gitkeep`) según plan.md
 - [ ] T005 [AB] Revisar y aprobar en el PR de F0 el contrato `specs/001-prestamos-equipos/contracts/api.md` y las firmas de "Contratos internos entre personas" de `plan.md` (cada uno deja comentario de aprobación)
@@ -97,7 +97,7 @@ cada historia. Las pruebas automatizadas son **opcionales** y están en la fase 
 - [x] T034 [P] [B] Implementar `frontend/src/App.tsx` y `frontend/src/main.tsx`: `QueryClientProvider`, `AuthProvider`, rutas `/login`, `/catalogo`, `/catalogo/:id`, `/recursos/nuevo`, `/recursos/:id/editar`, `/solicitudes/nueva`, `/mis-solicitudes`, `/gestion`, `/prestamos/:id`, `/tablero`, `/historial` envueltas en `ProtectedRoute` con roles (páginas placeholder hasta cada historia)
 - [x] T035 [P] [B] Implementar `frontend/src/components/Layout.tsx` + `NavBar.tsx` con menú por rol (S: Catálogo, Mis solicitudes; R: Catálogo, Gestión, Recursos, Tablero; C: Tablero, Historial) y usuario/cerrar sesión
 - [x] T036 [P] [B] Implementar componentes compartidos en `frontend/src/components/`: `StatusBadge.tsx` (colores por `EffectiveStatus`/`ResourceStatus`), `ErrorAlert.tsx` (muestra `ApiError.detail` y `fields`), `DataTable.tsx` (paginación), `DateTimeField.tsx`, `ConfirmDialog.tsx` (con campo de texto opcional/obligatorio), y `frontend/src/utils/format.ts` (fechas en `America/Bogota`); estilos base en `frontend/src/styles.css`
-- [ ] T094 [B] **Primero**: abrir un PR corto `feat/f1b-base` (Revisor: A) con T023–T029 y la semilla mínima de usuarios de T033, para que A pueda probar login y `deps.py` (T013, T015, T022); el resto de F1B (T030–T036) sigue en `feat/f1b-datos`
+- [ ] T094 (_no aplicó: Juan entregó la base de datos en un solo PR #4_) [B] **Primero**: abrir un PR corto `feat/f1b-base` (Revisor: A) con T023–T029 y la semilla mínima de usuarios de T033, para que A pueda probar login y `deps.py` (T013, T015, T022); el resto de F1B (T030–T036) sigue en `feat/f1b-datos`
 - [x] T037 [B] Abrir PR `feat/f1b-datos` (Revisor: A) con evidencia de `alembic upgrade head` + `seed` y captura de la restricción `loans_no_overlap` en la BD
 
 **🔄 SYNC-1**: PR F1A y F1B mergeados. Desde aquí A y B trabajan en paralelo por historias.
@@ -253,11 +253,11 @@ cada historia. Las pruebas automatizadas son **opcionales** y están en la fase 
 - [x] T085 [A] Redactar `README.md` con las 9 secciones de la guía (información general e integrantes con aportes, descripción, requisitos, arquitectura, configuración del entorno siguiendo `quickstart.md`, tabla de endpoints reales, pruebas y evidencias, control de versiones con enlaces a PR, conclusiones y limitaciones); B aporta secciones 4 y 6 mediante PR propio
 - [x] T086 [P] [AB] Revisión de seguridad: `git grep` de secretos, confirmar `.env` ignorado, errores 500 sin trazas, todos los endpoints con rol correcto según tabla de `contracts/api.md`
 - [ ] T087 [AB] Ejecutar los escenarios Q1–Q11 de `quickstart.md` desde un clon limpio siguiendo solo el README (reproducibilidad) y corregir lo que falle
-- [ ] T088 [AB] Preparar sustentación: guion del ciclo completo, pruebas a repetir, y resumen de aportes por persona con enlaces a commits/PR en el README
+- [x] T088 [AB] Preparar sustentación: guion del ciclo completo, pruebas a repetir, y resumen de aportes por persona con enlaces a commits/PR en el README
 
 ### Opcional — pruebas automatizadas (no exigidas por la guía)
 
-- [ ] T089 [P] [B] (Opcional) `backend/tests/test_rules.py`: solapamiento `[)` contiguo, vencido ocupa abierto, límites 2/5, `OVERDUE_BLOCK`, `TEACHER_ONLY`, transiciones inválidas, aprobación concurrente (dos sesiones) → solo una APROBADA
+- [x] T089 [P] [B] (Opcional) `backend/tests/test_rules.py`: solapamiento `[)` contiguo, vencido ocupa abierto, límites 2/5, `OVERDUE_BLOCK`, `TEACHER_ONLY`, transiciones inválidas, aprobación concurrente (dos sesiones) → solo una APROBADA
 - [x] T090 [P] [A] (Opcional) `backend/tests/test_permissions.py`: matriz rol × endpoint de `contracts/api.md` (401/403) y aislamiento de solicitudes ajenas (404)
 
 ---
