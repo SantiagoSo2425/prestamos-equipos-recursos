@@ -996,6 +996,12 @@ form.card .actions {
   animation: pop 0.22s var(--ease) both;
 }
 
+.dialog-wide {
+  width: min(560px, 100%);
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+}
+
 .dialog h2 {
   margin: 0 0 0.6rem;
 }

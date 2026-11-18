@@ -10,6 +10,7 @@ import PageHeader from '../../components/PageHeader'
 import { CardGridSkeleton } from '../../components/Skeleton'
 import StatusBadge from '../../components/StatusBadge'
 import { localInputToIso } from '../../utils/datetime'
+import ResourceModal from '../../components/ResourceModal'
 import ApiErrorMessage from '../common/ApiErrorMessage'
 import Pagination from '../common/Pagination'
 
@@ -44,6 +45,8 @@ export default function CatalogPage() {
   const [applied, setApplied] = useState<Filters>(EMPTY)
   const [page, setPage] = useState(1)
   const [formError, setFormError] = useState<string | null>(null)
+  // undefined = cerrado · null = crear · Resource = editar
+  const [modal, setModal] = useState<Resource | null | undefined>(undefined)
 
   const categories = useQuery({
     queryKey: ['categories'],
@@ -119,9 +122,9 @@ export default function CatalogPage() {
         subtitle="Encuentra un equipo y comprueba si está libre en la fecha que lo necesitas."
         actions={
           hasRole('RESPONSABLE') && (
-            <Link className="btn" to="/recursos/nuevo">
+            <button className="primary" onClick={() => setModal(null)}>
               <Icon name="plus" size={17} /> Nuevo recurso
-            </Link>
+            </button>
           )
         }
       />
@@ -252,9 +255,9 @@ export default function CatalogPage() {
                         </button>
                       ))}
                     {hasRole('RESPONSABLE') && (
-                      <Link className="btn secondary sm" to={`/recursos/${r.id}/editar`}>
+                      <button className="secondary sm" onClick={() => setModal(r)}>
                         <Icon name="edit" size={14} /> Editar
-                      </Link>
+                      </button>
                     )}
                     <Link className="btn ghost sm" to={`/catalogo/${r.id}`}>
                       Ver detalle
@@ -266,6 +269,9 @@ export default function CatalogPage() {
           </div>
           <Pagination page={data.page} size={data.size} total={data.total} onChange={setPage} />
         </>
+      )}
+      {modal !== undefined && (
+        <ResourceModal resource={modal ?? undefined} onClose={() => setModal(undefined)} />
       )}
     </section>
   )
