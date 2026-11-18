@@ -131,7 +131,7 @@ erDiagram
 | TanStack Query | Caché e invalidación de consultas tras cada operación |
 
 Diagramas completos, máquina de estados, reglas V1–V7, matriz de permisos y correspondencia con los requisitos en
-[`docs/diseno.md`](docs/diseno.md).
+[`docs/diseno.md`](docs/diseno.md). Para exponerlo: organización del repositorio, modelo de datos, usuarios y ciclos de vida en [`docs/explicacion-sistema.md`](docs/explicacion-sistema.md).
 
 ## 5. Configuración del entorno
 

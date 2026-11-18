@@ -6,6 +6,8 @@ Documento de diseño del sistema de préstamos de equipos y recursos. Complement
 ([`contracts/api.md`](../specs/001-prestamos-equipos/contracts/api.md)). El detalle de requisitos está en
 [`requisitos.md`](requisitos.md).
 
+> Explicación guiada del repositorio, la base de datos, los usuarios y los ciclos de vida: [`explicacion-sistema.md`](explicacion-sistema.md).
+
 ## 1. Arquitectura de componentes
 
 ```mermaid
