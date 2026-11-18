@@ -34,3 +34,7 @@ el esquema se recrea en cada ejecución y la prueba se niega a correr contra otr
 
 Marcar los jobs *Backend* y *Frontend* como comprobaciones obligatorias en la protección de `main` y `develop`
 (Settings → Branches), para que no se pueda integrar un PR con las pruebas en rojo.
+
+## Despliegue
+
+El despliegue continuo a Azure parte de este CI: ver [`despliegue.md`](despliegue.md).
