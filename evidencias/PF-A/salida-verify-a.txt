@@ -1,0 +1,65 @@
+Ejecución de backend/scripts/verify_a.py contra PostgreSQL 16 (Docker) con la semilla recién cargada.
+Comando: python -m scripts.verify_a  (47 comprobaciones, 0 fallas)
+
+== PF-01 catálogo y disponibilidad
+OK     catálogo sin rango: 11 visibles (oculta DADO_DE_BAJA), available null 200 
+OK     filtro por categoría Portátil                                  200 
+OK     rango: PORT-002 RESERVADO, PORT-001 PRESTADO                   200 
+OK     solo disponibles excluye ocupados                              200 
+OK     recurso EN_REVISION/DADO_DE_BAJA: no activo                    200 
+OK     detalle PORT-001: periodo vencido abierto                      200 PORT-001
+OK     rango incompleto -> 422                                        422 VALIDATION_ERROR
+== PF-02 recurso inexistente
+OK     GET /resources/99999 -> 404                                    404 NOT_FOUND
+OK     sin token -> 401                                               401 NOT_AUTHENTICATED
+== PF-03 solicitud válida
+OK     crear solicitud -> 201 PENDIENTE                               201 
+OK     recuperable por id                                             200 
+OK     aparece en mis solicitudes                                     200 
+OK     movimiento null -> PENDIENTE                                   200 
+      SQL: [('PENDIENTE', 1)] [(1,)]
+OK     ajena -> 404 (est.luis)                                        404 NOT_FOUND
+== PF-04 solicitudes inválidas (no deben persistirse)
+OK     fin anterior al inicio -> 422 end_at                           422 VALIDATION_ERROR
+OK     propósito corto -> 422 purpose                                 422 VALIDATION_ERROR
+OK     inicio en el pasado -> 422                                     422 VALIDATION_ERROR
+OK     duración > máxima -> 422                                       422 VALIDATION_ERROR
+OK     estudiante pide INST-001 (solo docentes) -> 403                403 TEACHER_ONLY
+OK     est.luis con préstamo vencido -> 409                           409 OVERDUE_BLOCK
+OK     solape con APROBADA -> 409 OVERLAP                             409 OVERLAP
+OK     recurso EN_REVISION -> 409                                     409 RESOURCE_NOT_AVAILABLE
+OK     responsable no crea solicitudes -> 403                         403 FORBIDDEN
+      SQL: loans antes=10 después=10 -> sin cambios
+OK     cancelar propia -> 200                                         200 
+OK     cancelar de nuevo -> 409                                       409 INVALID_TRANSITION
+OK     cancelar ajena -> 404                                          404 NOT_FOUND
+== PF-13 / PF-14 administración de recursos
+OK     S no crea recursos -> 403                                      403 FORBIDDEN
+OK     R crea PORT-905 -> 201 ACTIVO                                  201 PORT-905
+OK     aparece en el catálogo                                         200 
+OK     código duplicado -> 409                                        409 DUPLICATE_CODE
+OK     código inválido -> 422                                         422 VALIDATION_ERROR
+OK     editar descripción                                             200 PORT-905
+OK     EN_REVISION con préstamo ACTIVO -> 409                         409 RESOURCE_IN_USE
+      SQL: [('ACTIVO',)]
+OK     EN_REVISION de recurso libre -> 200                            200 PORT-905
+== PF-11 consolidado
+OK     summary (coordinación)                                         200 
+      tablero: {'PENDIENTE': 2, 'APROBADA': 1, 'RECHAZADA': 1, 'CANCELADA': 2, 'ACTIVA': 1, 'VENCIDA': 1, 'DEVUELTA': 2} 
+      SQL    : {'RECHAZADA': 1, 'APROBADA': 1, 'DEVUELTA': 2, 'ACTIVA': 1, 'CANCELADA': 2, 'PENDIENTE': 2, 'VENCIDA': 1} -> COINCIDEN
+OK     totales de recursos = SQL                                      200 
+OK     vencido de est.luis con días de retraso                        200 
+      SQL: filas huérfanas = 0
+OK     uso por categoría/recurso                                      200 
+OK     historial filtrado VENCIDA                                     200 
+OK     historial filtrado por categoría                               200 
+OK     solicitante no ve el tablero -> 403                            403 FORBIDDEN
+OK     coordinación no gestiona (aprobar) -> 403                      403 FORBIDDEN
+== Ciclo completo por API (apoyo a PF-12)
+OK     est.ana crea solicitud                                         201 
+OK     resp.carlos aprueba                                            200 
+OK     resp.carlos entrega                                            200 
+OK     resp.carlos recibe devolución BUENO                            200 
+OK     4 movimientos en orden                                         200 
+
+FALLAS: ninguna
