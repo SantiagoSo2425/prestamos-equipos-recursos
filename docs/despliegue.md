@@ -136,8 +136,27 @@ gh variable set ACR_NAME --env azure --body "$ACR"
 gh variable set API_URL --env azure --body "https://$APP.azurewebsites.net/api"
 ```
 
-En *Settings → Environments → azure* se pueden exigir revisores para aprobar cada despliegue. Además conviene exigir
-los jobs **Backend** y **Frontend** del CI como comprobaciones obligatorias en `main` y `develop`.
+**Solo `main` despliega.** Dos barreras: el workflow solo reacciona al CI de `main` (`workflow_run` con
+`branches: [main]`) y el environment `azure` acepta únicamente despliegues desde `main`:
+
+```bash
+echo '{"deployment_branch_policy":{"protected_branches":false,"custom_branch_policies":true}}' > env.json
+gh api -X PUT repos/<owner>/<repo>/environments/azure --input env.json
+gh api -X POST repos/<owner>/<repo>/environments/azure/deployment-branch-policies -f name=main -f type=branch
+```
+
+**Protección de `main`** (PR obligatorio con 1 aprobación, jobs *Backend (pytest + PostgreSQL)* y *Frontend (lint +
+build)* del CI en verde y rama al día, sin *force push* ni borrado, conversaciones resueltas; los administradores
+pueden saltarla en emergencias):
+
+```bash
+gh api -X PUT repos/<owner>/<repo>/branches/main/protection --input prot.json
+# prot.json: required_status_checks {strict: true, contexts: [los dos jobs]}, enforce_admins: false,
+#   required_pull_request_reviews {required_approving_review_count: 1, dismiss_stale_reviews: true},
+#   restrictions: null, allow_force_pushes: false, allow_deletions: false, required_conversation_resolution: true
+```
+
+En *Settings → Environments → azure* también se pueden exigir revisores para aprobar cada despliegue.
 
 ## 5. Datos iniciales
 
