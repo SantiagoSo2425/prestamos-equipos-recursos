@@ -13,7 +13,6 @@ import HistoryPage from './pages/dashboard/HistoryPage'
 import LoanDetailPage from './pages/loans/LoanDetailPage'
 import MyRequestsPage from './pages/requests/MyRequestsPage'
 import NewRequestPage from './pages/requests/NewRequestPage'
-import ResourceFormPage from './pages/resources/ResourceFormPage'
 import ReviewInboxPage from './pages/review/ReviewInboxPage'
 
 const S: Role = 'SOLICITANTE'
@@ -41,8 +40,6 @@ export default function App() {
       <Route path="/" element={<Home />} />
       <Route path="/catalogo" element={guarded([S, R, C], <CatalogPage />)} />
       <Route path="/catalogo/:id" element={guarded([S, R, C], <ResourceDetailPage />)} />
-      <Route path="/recursos/nuevo" element={guarded([R], <ResourceFormPage />)} />
-      <Route path="/recursos/:id/editar" element={guarded([R], <ResourceFormPage />)} />
       <Route path="/solicitudes/nueva" element={guarded([S], <NewRequestPage />)} />
       <Route path="/mis-solicitudes" element={guarded([S], <MyRequestsPage />)} />
       <Route path="/gestion" element={guarded([R], <ReviewInboxPage />)} />
