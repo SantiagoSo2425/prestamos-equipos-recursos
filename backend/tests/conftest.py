@@ -53,12 +53,30 @@ def _schema():
     engine.dispose()
 
 
+_TRUNCATE = "TRUNCATE loan_movements, loans, resources, categories, users RESTART IDENTITY CASCADE"
+
+
+def _usa_semilla(request) -> bool:
+    """`test_permissions.py` asume la BD sembrada (usuarios de demo) y no modifica datos."""
+    return request.module.__name__.endswith("test_permissions")
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _datos_semilla(request):
+    if _usa_semilla(request):
+        from app import seed
+
+        with engine.begin() as c:
+            c.execute(text(_TRUNCATE))
+        seed.run()
+
+
 @pytest.fixture(autouse=True)
-def _clean():
+def _clean(request):
+    if _usa_semilla(request):
+        return
     with engine.begin() as c:
-        c.execute(text(
-            "TRUNCATE loan_movements, loans, resources, categories, users RESTART IDENTITY CASCADE"
-        ))
+        c.execute(text(_TRUNCATE))
 
 
 @pytest.fixture
