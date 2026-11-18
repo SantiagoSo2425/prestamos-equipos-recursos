@@ -118,6 +118,31 @@ az role assignment create --assignee-object-id $SPID --assignee-principal-type S
 az ad app federated-credential create --id $APPID --parameters fedcred.json
 ```
 
+### Error `AADSTS700213: No matching federated identity record found`
+
+Es el fallo más probable del primer despliegue. GitHub puede firmar el token OIDC con un *subject* distinto al
+«clásico» `repo:<owner>/<repo>:environment:azure`: en algunos repositorios incluye los **IDs inmutables** del
+propietario y del repositorio. En este proyecto el log del paso *Login en Azure (OIDC)* mostró:
+
+```text
+subject claim - repo:SantiagoSo2425@177159409/prestamos-equipos-recursos@1460815845:environment:azure
+```
+
+Azure compara el *subject* **literalmente**, así que la credencial federada creada solo con el nombre no coincide.
+La solución es registrar también la credencial con el subject exacto que aparece en el error:
+
+```bash
+# fedcred-ids.json: {"name":"github-azure-ids","issuer":"https://token.actions.githubusercontent.com",
+#   "subject":"repo:<owner>@<id-owner>/<repo>@<id-repo>:environment:azure","audiences":["api://AzureADTokenExchange"]}
+az ad app federated-credential create --id $APPID --parameters fedcred-ids.json
+gh run rerun <id-de-la-ejecución-fallida>      # tras ~20 s de propagación
+```
+
+Conviene dejar **las dos** credenciales (`github-azure` y `github-azure-ids`): cubren ambos formatos de subject.
+Los IDs se pueden consultar con `gh api repos/<owner>/<repo> -q '.id, .owner.id'` (repositorio y propietario). Para
+tener en cuenta: el subject cambia si se cambia el nombre del *environment* (`azure`), y los IDs no cambian aunque se
+renombre el repositorio.
+
 Si el tenant no deja crear aplicaciones de Entra ID, la alternativa es un *publish profile* del App Service
 guardado como secreto, cambiando `azure/login` por ese perfil.
 
