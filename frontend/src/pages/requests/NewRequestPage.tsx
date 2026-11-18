@@ -46,12 +46,21 @@ export default function NewRequestPage() {
     },
   })
 
+  /** Quita el error de un campo en cuanto el usuario lo corrige. */
+  const clearError = (field: string) =>
+    setErrors((e) => {
+      if (!(field in e)) return e
+      const { [field]: _removed, ...rest } = e
+      return rest
+    })
+
   function setDuration(hours: number) {
     if (!start) {
       setErrors((e) => ({ ...e, start_at: 'Primero indica la fecha y hora de inicio.' }))
       return
     }
     setEnd(toLocalInput(new Date(new Date(start).getTime() + hours * 3_600_000)))
+    clearError('end_at')
   }
 
   function validate(maxHours: number | undefined): Record<string, string> {
@@ -160,12 +169,20 @@ export default function NewRequestPage() {
         <div className="filters" style={{ border: 'none', padding: 0, boxShadow: 'none', margin: 0, background: 'none' }}>
           <label>
             Inicio
-            <input type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)} />
+            <input type="datetime-local" value={start} onChange={(e) => {
+                setStart(e.target.value)
+                clearError('start_at')
+              }}
+            />
             {shown('start_at') && <span className="field-error">{shown('start_at')}</span>}
           </label>
           <label>
             Fin
-            <input type="datetime-local" value={end} onChange={(e) => setEnd(e.target.value)} />
+            <input type="datetime-local" value={end} onChange={(e) => {
+                setEnd(e.target.value)
+                clearError('end_at')
+              }}
+            />
             {shown('end_at') && <span className="field-error">{shown('end_at')}</span>}
           </label>
         </div>
@@ -189,7 +206,10 @@ export default function NewRequestPage() {
             value={purpose}
             maxLength={MAX_PURPOSE + 50}
             placeholder="Ej.: Práctica de laboratorio de redes con el grupo 3"
-            onChange={(e) => setPurpose(e.target.value)}
+            onChange={(e) => {
+              setPurpose(e.target.value)
+              clearError('purpose')
+            }}
           />
           <span className="counter" style={{ color: len > MAX_PURPOSE ? 'var(--bad)' : undefined }}>
             {len}/{MAX_PURPOSE} · mínimo {MIN_PURPOSE} caracteres

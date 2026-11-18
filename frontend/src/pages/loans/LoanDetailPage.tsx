@@ -165,6 +165,7 @@ export default function LoanDetailPage() {
           title="Rechazar solicitud"
           message="Indica el motivo; el solicitante podrá verlo."
           confirmLabel="Rechazar"
+          danger
           textLabel="Motivo del rechazo"
           textRequired
           minLength={5}

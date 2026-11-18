@@ -164,10 +164,11 @@ function ResourceForm({ id, initial }: { id?: string; initial?: ResourceDetail }
         {save.isError && <ApiErrorMessage error={save.error} />}
 
         <div className="actions">
-          <button type="submit" disabled={save.isPending}>
+          <button type="submit" className="primary" disabled={save.isPending}>
+            {save.isPending && <span className="spinner" />}
             {save.isPending ? 'Guardando…' : 'Guardar'}
           </button>
-          <Link className="btn secondary" to="/catalogo">
+          <Link className="btn ghost" to="/catalogo">
             Cancelar
           </Link>
         </div>
