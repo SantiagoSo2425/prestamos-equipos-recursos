@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { apiFetch } from '../../api/client'
 import type { Loan } from '../../api/types'
+import EmptyState from '../../components/EmptyState'
+import PageHeader from '../../components/PageHeader'
+import { Skeleton } from '../../components/Skeleton'
 import { formatDateTime, toDateInput } from '../../utils/datetime'
 import ApiErrorMessage from '../common/ApiErrorMessage'
 import { statusLabel } from '../common/status'
@@ -27,6 +30,22 @@ interface Usage {
   }[]
 }
 
+const LOAN_TONE: Record<string, string> = {
+  PENDIENTE: 'warn',
+  APROBADA: 'info',
+  RECHAZADA: 'bad',
+  CANCELADA: 'muted',
+  ACTIVA: 'ok',
+  VENCIDA: 'bad',
+  DEVUELTA: 'muted',
+}
+
+const RESOURCE_TONE: Record<string, string> = {
+  ACTIVO: 'ok',
+  EN_REVISION: 'warn',
+  DADO_DE_BAJA: 'muted',
+}
+
 function LoanRows({ loans }: { loans: Loan[] }) {
   return (
     <div className="table-wrap">
@@ -45,14 +64,20 @@ function LoanRows({ loans }: { loans: Loan[] }) {
           {loans.map((l) => (
             <tr key={l.id}>
               <td>
-                {l.resource.code} · {l.resource.name}
+                <strong>{l.resource.name}</strong>
+                <div className="muted">{l.resource.code}</div>
               </td>
               <td>{l.requester.full_name}</td>
               <td>{l.delivered_by?.full_name ?? '—'}</td>
               <td>{formatDateTime(l.end_at)}</td>
-              <td>
-                {l.days_overdue > 0 ? <StatusTag status="VENCIDA" /> : '—'}
-                {l.days_overdue > 0 && ` ${l.days_overdue} día(s)`}
+              <td style={{ whiteSpace: 'nowrap' }}>
+                {l.days_overdue > 0 ? (
+                  <>
+                    <StatusTag status="VENCIDA" /> <span className="muted">{l.days_overdue} d</span>
+                  </>
+                ) : (
+                  '—'
+                )}
               </td>
               <td>
                 <Link to={`/prestamos/${l.id}`}>Ver</Link>
@@ -61,6 +86,25 @@ function LoanRows({ loans }: { loans: Loan[] }) {
           ))}
         </tbody>
       </table>
+    </div>
+  )
+}
+
+function UsageBars({ rows }: { rows: { key: string; label: string; hint: string; value: number }[] }) {
+  const max = Math.max(...rows.map((r) => r.value), 1)
+  return (
+    <div className="card">
+      {rows.map((r) => (
+        <div className="bar-row" key={r.key}>
+          <span>
+            <strong>{r.label}</strong>
+          </span>
+          <div className="bar" aria-hidden="true">
+            <span style={{ width: `${Math.max(4, (r.value / max) * 100)}%` }} />
+          </div>
+          <span className="muted">{r.hint}</span>
+        </div>
+      ))}
     </div>
   )
 }
@@ -100,43 +144,57 @@ export default function DashboardPage() {
   const s = summary.data
 
   return (
-    <main>
-      <h1>Tablero de coordinación</h1>
-      {summary.isLoading && <p>Cargando…</p>}
+    <section>
+      <PageHeader
+        title="Tablero"
+        subtitle="Una vista consolidada del estado de los préstamos y de los recursos."
+      />
       {summary.isError && <ApiErrorMessage error={summary.error} />}
+
+      {summary.isLoading && (
+        <div className="stats" role="status" aria-label="Cargando">
+          {Array.from({ length: 7 }, (_, i) => (
+            <Skeleton key={i} height={86} />
+          ))}
+        </div>
+      )}
 
       {s && (
         <>
-          <h2>Préstamos por estado</h2>
-          <div className="cards">
+          <h2 style={{ marginTop: 0 }}>Préstamos por estado</h2>
+          <div className="stats">
             {Object.entries(s.loans_by_status).map(([k, v]) => (
-              <div className="card" key={k}>
-                <div className="num">{v}</div>
-                <StatusTag status={k} />
+              <div className={`stat ${LOAN_TONE[k] ?? ''}`} key={k}>
+                <span className="num">{v}</span>
+                <span className="label">{statusLabel(k)}</span>
               </div>
             ))}
           </div>
 
           <h2>Recursos por estado</h2>
-          <div className="cards">
+          <div className="stats">
             {Object.entries(s.resources_by_status).map(([k, v]) => (
-              <div className="card" key={k}>
-                <div className="num">{v}</div>
-                <span>{statusLabel(k)}</span>
+              <div className={`stat ${RESOURCE_TONE[k] ?? ''}`} key={k}>
+                <span className="num">{v}</span>
+                <span className="label">{statusLabel(k)}</span>
               </div>
             ))}
           </div>
 
           <h2>Préstamos vencidos ({s.overdue_loans.length})</h2>
           {s.overdue_loans.length === 0 ? (
-            <p className="muted">No hay préstamos vencidos.</p>
+            <EmptyState icon="checkCircle" title="Todo al día">
+              No hay préstamos vencidos sin devolver.
+            </EmptyState>
           ) : (
             <LoanRows loans={s.overdue_loans} />
           )}
 
           <h2>Préstamos activos ({s.active_loans.length})</h2>
           {s.active_loans.length === 0 ? (
-            <p className="muted">No hay préstamos activos.</p>
+            <EmptyState icon="box" title="Sin préstamos activos">
+              Los recursos entregados que estén en curso aparecerán aquí.
+            </EmptyState>
           ) : (
             <LoanRows loans={s.active_loans} />
           )}
@@ -144,7 +202,7 @@ export default function DashboardPage() {
       )}
 
       <h2>Uso de recursos</h2>
-      <div className="filters">
+      <div className="filters" style={{ maxWidth: 560 }}>
         <label>
           Desde
           <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
@@ -153,7 +211,11 @@ export default function DashboardPage() {
           Hasta
           <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
         </label>
-        <button onClick={applyRange}>Aplicar</button>
+        <div className="filter-actions">
+          <button className="primary" onClick={applyRange}>
+            Aplicar
+          </button>
+        </div>
       </div>
       {rangeError && (
         <p role="alert" className="field-error">
@@ -163,60 +225,53 @@ export default function DashboardPage() {
       {usage.isError && <ApiErrorMessage error={usage.error} />}
       {usage.data && (
         <>
-          <h3>Por categoría</h3>
+          <h3>Horas de uso por categoría</h3>
           {usage.data.by_category.length === 0 ? (
-            <p className="muted">Sin préstamos entregados en el rango.</p>
+            <EmptyState icon="clock" title="Sin uso en este rango">
+              No hubo préstamos entregados entre las fechas seleccionadas.
+            </EmptyState>
           ) : (
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Categoría</th>
-                    <th>Préstamos</th>
-                    <th>Horas de uso</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {usage.data.by_category.map((c) => (
-                    <tr key={c.category}>
-                      <td>{c.category}</td>
-                      <td>{c.loans}</td>
-                      <td>{c.hours}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <UsageBars
+              rows={usage.data.by_category.map((c) => ({
+                key: c.category,
+                label: c.category,
+                hint: `${c.hours} h · ${c.loans} préstamo(s)`,
+                value: c.hours,
+              }))}
+            />
           )}
-          <h3>Por recurso</h3>
           {usage.data.by_resource.length > 0 && (
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Recurso</th>
-                    <th>Préstamos</th>
-                    <th>Horas de uso</th>
-                    <th>Último préstamo</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {usage.data.by_resource.map((r) => (
-                    <tr key={r.resource_id}>
-                      <td>
-                        {r.code} · {r.name}
-                      </td>
-                      <td>{r.loans}</td>
-                      <td>{r.hours}</td>
-                      <td>{formatDateTime(r.last_loan_at)}</td>
+            <>
+              <h3>Recursos más usados</h3>
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Recurso</th>
+                      <th>Préstamos</th>
+                      <th>Horas de uso</th>
+                      <th>Último préstamo</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {usage.data.by_resource.map((r) => (
+                      <tr key={r.resource_id}>
+                        <td>
+                          <strong>{r.name}</strong>
+                          <div className="muted">{r.code}</div>
+                        </td>
+                        <td>{r.loans}</td>
+                        <td>{r.hours}</td>
+                        <td>{formatDateTime(r.last_loan_at)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </>
       )}
-    </main>
+    </section>
   )
 }

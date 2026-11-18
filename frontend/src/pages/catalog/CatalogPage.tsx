@@ -4,10 +4,14 @@ import { useQuery } from '@tanstack/react-query'
 import { apiFetch } from '../../api/client'
 import type { Category, Page, Resource } from '../../api/types'
 import { useAuth } from '../../auth/AuthContext'
+import EmptyState from '../../components/EmptyState'
+import Icon, { type IconName } from '../../components/Icon'
+import PageHeader from '../../components/PageHeader'
+import { CardGridSkeleton } from '../../components/Skeleton'
+import StatusBadge from '../../components/StatusBadge'
 import { localInputToIso } from '../../utils/datetime'
 import ApiErrorMessage from '../common/ApiErrorMessage'
 import Pagination from '../common/Pagination'
-import StatusTag from '../common/StatusTag'
 
 interface Filters {
   category_id: string
@@ -18,12 +22,20 @@ interface Filters {
 }
 
 const EMPTY: Filters = { category_id: '', q: '', from: '', to: '', available_only: false }
-const SIZE = 20
+const SIZE = 12
 
 const REASON: Record<string, string> = {
   PRESTADO: 'Prestado',
   RESERVADO: 'Reservado',
   NO_ACTIVO: 'No activo',
+}
+
+function categoryIcon(name: string): IconName {
+  const n = name.toLowerCase()
+  if (n.includes('port')) return 'laptop'
+  if (n.includes('cámara') || n.includes('camara')) return 'camera'
+  if (n.includes('instrum')) return 'gauge'
+  return 'box'
 }
 
 export default function CatalogPage() {
@@ -52,6 +64,7 @@ export default function CatalogPage() {
           size: SIZE,
         },
       }),
+    placeholderData: (prev) => prev,
   })
 
   function onSubmit(e: FormEvent) {
@@ -100,10 +113,28 @@ export default function CatalogPage() {
   const data = resources.data
 
   return (
-    <main>
-      <h1>Catálogo de recursos</h1>
+    <section>
+      <PageHeader
+        title="Catálogo de recursos"
+        subtitle="Encuentra un equipo y comprueba si está libre en la fecha que lo necesitas."
+        actions={
+          hasRole('RESPONSABLE') && (
+            <Link className="btn" to="/recursos/nuevo">
+              <Icon name="plus" size={17} /> Nuevo recurso
+            </Link>
+          )
+        }
+      />
 
       <form className="filters" onSubmit={onSubmit} noValidate>
+        <label>
+          Buscar
+          <input
+            value={form.q}
+            placeholder="Código o nombre"
+            onChange={(e) => setForm({ ...form, q: e.target.value })}
+          />
+        </label>
         <label>
           Categoría
           <select
@@ -117,10 +148,6 @@ export default function CatalogPage() {
               </option>
             ))}
           </select>
-        </label>
-        <label>
-          Código o nombre
-          <input value={form.q} onChange={(e) => setForm({ ...form, q: e.target.value })} />
         </label>
         <label>
           Desde
@@ -146,95 +173,100 @@ export default function CatalogPage() {
           />
           Solo disponibles
         </label>
-        <button type="submit">Buscar</button>
-        <button type="button" className="secondary" onClick={onClear}>
-          Limpiar
-        </button>
-        {hasRole('RESPONSABLE') && (
-          <Link className="btn secondary" to="/recursos/nuevo">
-            Nuevo recurso
-          </Link>
-        )}
+        <div className="filter-actions">
+          <button type="submit" className="primary">
+            <Icon name="search" size={16} /> Buscar
+          </button>
+          <button type="button" className="ghost" onClick={onClear}>
+            Limpiar
+          </button>
+        </div>
       </form>
       {formError && (
-        <p role="alert" className="field-error">
+        <p role="alert" className="field-error" style={{ marginTop: '-0.8rem' }}>
           {formError}
         </p>
       )}
 
-      {resources.isLoading && <p>Cargando recursos…</p>}
+      {!applied.from && (
+        <p className="muted" style={{ marginTop: '-0.4rem', fontSize: '0.88rem' }}>
+          Tip: elige un rango de fechas para ver qué recursos están disponibles en ese momento.
+        </p>
+      )}
+
+      {resources.isLoading && <CardGridSkeleton />}
       {resources.isError && <ApiErrorMessage error={resources.error} />}
+
       {data && data.items.length === 0 && (
-        <p className="alert info">No se encontraron recursos con esos filtros.</p>
+        <EmptyState
+          icon="search"
+          title="No encontramos recursos"
+          action={
+            <button className="secondary" onClick={onClear}>
+              Quitar filtros
+            </button>
+          }
+        >
+          Prueba con otra categoría, otro rango de fechas o una búsqueda más amplia.
+        </EmptyState>
       )}
 
       {data && data.items.length > 0 && (
         <>
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Código</th>
-                  <th>Nombre</th>
-                  <th>Categoría</th>
-                  <th>Estado</th>
-                  <th>Disponibilidad</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.items.map((r) => {
-                  const req = canRequest(r)
-                  return (
-                    <tr key={r.id}>
-                      <td>{r.code}</td>
-                      <td>
-                        <Link to={`/catalogo/${r.id}`}>{r.name}</Link>
-                        {r.teacher_only && <span className="muted"> · solo docentes</span>}
-                      </td>
-                      <td>{r.category.name}</td>
-                      <td>
-                        <StatusTag status={r.status} />
-                      </td>
-                      <td>
-                        {r.available === null ? (
-                          <span className="muted">Indica un rango</span>
-                        ) : r.available ? (
-                          <span className="tag ok">Disponible</span>
-                        ) : (
-                          <span className="tag bad">
-                            {REASON[r.unavailable_reason ?? ''] ?? 'No disponible'}
-                          </span>
-                        )}
-                      </td>
-                      <td>
-                        <div className="actions">
-                          {hasRole('SOLICITANTE') &&
-                            (req.ok ? (
-                              <Link className="btn" to={requestLink(r)}>
-                                Solicitar
-                              </Link>
-                            ) : (
-                              <button disabled title={req.why}>
-                                Solicitar
-                              </button>
-                            ))}
-                          {hasRole('RESPONSABLE') && (
-                            <Link className="btn secondary" to={`/recursos/${r.id}/editar`}>
-                              Editar
-                            </Link>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+          <div className="resource-grid" style={{ opacity: resources.isPlaceholderData ? 0.6 : 1 }}>
+            {data.items.map((r) => {
+              const req = canRequest(r)
+              return (
+                <article className="resource-card" key={r.id}>
+                  <div className="top">
+                    <span className="resource-icon">
+                      <Icon name={categoryIcon(r.category.name)} size={22} />
+                    </span>
+                    <StatusBadge status={r.status} />
+                  </div>
+                  <div>
+                    <span className="code">{r.code}</span>
+                    <h3>
+                      <Link to={`/catalogo/${r.id}`}>{r.name}</Link>
+                    </h3>
+                  </div>
+                  <div className="meta">
+                    <span>{r.category.name}</span>
+                    {r.teacher_only && <span className="badge badge-info">Solo docentes</span>}
+                    {r.available === true && <span className="badge badge-ok">Disponible</span>}
+                    {r.available === false && (
+                      <span className="badge badge-bad">
+                        {REASON[r.unavailable_reason ?? ''] ?? 'No disponible'}
+                      </span>
+                    )}
+                  </div>
+                  <div className="foot">
+                    {hasRole('SOLICITANTE') &&
+                      (req.ok ? (
+                        <Link className="btn sm" to={requestLink(r)}>
+                          Solicitar
+                        </Link>
+                      ) : (
+                        <button className="sm" disabled title={req.why}>
+                          Solicitar
+                        </button>
+                      ))}
+                    {hasRole('RESPONSABLE') && (
+                      <Link className="btn secondary sm" to={`/recursos/${r.id}/editar`}>
+                        <Icon name="edit" size={14} /> Editar
+                      </Link>
+                    )}
+                    <Link className="btn ghost sm" to={`/catalogo/${r.id}`}>
+                      Ver detalle
+                    </Link>
+                  </div>
+                </article>
+              )
+            })}
           </div>
           <Pagination page={data.page} size={data.size} total={data.total} onChange={setPage} />
         </>
       )}
-    </main>
+    </section>
   )
 }

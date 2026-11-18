@@ -4,6 +4,9 @@ import { useQuery } from '@tanstack/react-query'
 import { apiFetch } from '../../api/client'
 import type { Category, Loan, Page, Resource } from '../../api/types'
 import { formatDateTime } from '../../utils/datetime'
+import EmptyState from '../../components/EmptyState'
+import PageHeader from '../../components/PageHeader'
+import { TableSkeleton } from '../../components/Skeleton'
 import ApiErrorMessage from '../common/ApiErrorMessage'
 import Pagination from '../common/Pagination'
 import { LOAN_STATUS_OPTIONS } from '../common/status'
@@ -81,8 +84,11 @@ export default function HistoryPage() {
   const data = loans.data
 
   return (
-    <main>
-      <h1>Historial de préstamos</h1>
+    <section>
+      <PageHeader
+        title="Historial de préstamos"
+        subtitle="Consulta todas las operaciones y filtra por estado, recurso, solicitante o fechas."
+      />
       <form className="filters" onSubmit={onSubmit} noValidate>
         <label>
           Estado
@@ -135,19 +141,23 @@ export default function HistoryPage() {
           Hasta
           <input type="date" value={form.to} onChange={set('to')} />
         </label>
-        <button type="submit">Filtrar</button>
-        <button
-          type="button"
-          className="secondary"
-          onClick={() => {
-            setForm(EMPTY)
-            setApplied(EMPTY)
-            setPage(1)
-            setFormError(null)
-          }}
-        >
-          Limpiar
-        </button>
+        <div className="filter-actions">
+          <button type="submit" className="primary">
+            Filtrar
+          </button>
+          <button
+            type="button"
+            className="ghost"
+            onClick={() => {
+              setForm(EMPTY)
+              setApplied(EMPTY)
+              setPage(1)
+              setFormError(null)
+            }}
+          >
+            Limpiar
+          </button>
+        </div>
       </form>
       {formError && (
         <p role="alert" className="field-error">
@@ -155,10 +165,12 @@ export default function HistoryPage() {
         </p>
       )}
 
-      {loans.isLoading && <p>Cargando…</p>}
+      {loans.isLoading && <TableSkeleton />}
       {loans.isError && <ApiErrorMessage error={loans.error} />}
       {data && data.items.length === 0 && (
-        <p className="alert info">No hay operaciones con esos filtros.</p>
+        <EmptyState icon="history" title="Sin resultados">
+          No hay operaciones que coincidan con esos filtros.
+        </EmptyState>
       )}
       {data && data.items.length > 0 && (
         <>
@@ -203,6 +215,6 @@ export default function HistoryPage() {
           <Pagination page={data.page} size={data.size} total={data.total} onChange={setPage} />
         </>
       )}
-    </main>
+    </section>
   )
 }
