@@ -172,9 +172,9 @@ def create_loan(db: Session, user: User, data: LoanCreate) -> Loan:
 
 
 def cancel_loan(db: Session, user: User, loan_id: int, data: CancelIn) -> Loan:
-    loan = get_loan(db, user, loan_id)  # 404 si no existe o es ajena
-    if _role(user) != "SOLICITANTE":
+    if _role(user) != "SOLICITANTE":  # el rol se valida antes que la existencia (403 antes que 404)
         raise AppError(403, "FORBIDDEN", "Solo el solicitante puede cancelar su solicitud.")
+    loan = get_loan(db, user, loan_id)  # 404 si no existe o es ajena
     loan_states.assert_transition(loan, "cancel", user)
     previous = loan.status
     loan.status = LoanStatus.CANCELADA
