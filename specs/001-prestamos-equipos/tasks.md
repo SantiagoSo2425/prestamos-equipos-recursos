@@ -47,7 +47,7 @@ cada historia. Las pruebas automatizadas son **opcionales** y están en la fase 
 - [ ] T001 [A] Crear repositorio en GitHub con `gh repo create`, subir `main` y la rama `001-prestamos-equipos`, e invitar a Persona B como colaboradora
 - [ ] T002 [A] Configurar protección de `main` en GitHub (requerir PR y 1 aprobación, sin push directo) y documentar la regla en `docs/contribucion.md`
 - [ ] T003 [P] [B] Crear plantilla de PR en `.github/pull_request_template.md` con secciones: Propósito, Cambios, Requisitos (RF/CA), Pruebas efectuadas (PF-XX + evidencia), Checklist de constitución (reglas en servidor, permisos por rol, sin secretos, trazabilidad actualizada)
-- [ ] T004 [P] [A] Crear estructura de carpetas raíz `backend/`, `frontend/`, `docs/`, `docs/pruebas/`, `evidencias/` (con `.gitkeep`) según plan.md
+- [x] T004 [P] [A] Crear estructura de carpetas raíz `backend/`, `frontend/`, `docs/`, `docs/pruebas/`, `evidencias/` (con `.gitkeep`) según plan.md
 - [ ] T005 [AB] Revisar y aprobar en el PR de F0 el contrato `specs/001-prestamos-equipos/contracts/api.md` y las firmas de "Contratos internos entre personas" de `plan.md` (cada uno deja comentario de aprobación)
 - [ ] T006 [B] Redactar `docs/requisitos.md` (Act. 2): registro de entrevista (preguntas, respuestas, acuerdos, pendientes), actores, RF-01…RF-38 (equivalencia `FR-0NN`→`RF-NN` de spec.md), RNF (seguridad, rendimiento SC-008, usabilidad), historias US1–US7 con criterios de aceptación, priorización y supuestos sin confirmar (duraciones por categoría, límites 2/5)
 - [ ] T007 [AB] Merge del PR F0 a `main` tras revisión cruzada
@@ -62,23 +62,23 @@ cada historia. Las pruebas automatizadas son **opcionales** y están en la fase 
 
 ### F1A — Esqueleto backend + autenticación (Persona A) · Rama `feat/f1a-auth`
 
-- [ ] T008 [A] Crear `backend/requirements.txt` con versiones fijadas: fastapi, uvicorn[standard], pydantic, pydantic-settings, sqlalchemy>=2, alembic, psycopg[binary]>=3, PyJWT, passlib[bcrypt], python-multipart, pytest, httpx
-- [ ] T009 [P] [A] Crear `backend/.env.example` (sin secretos reales) con `DATABASE_URL=postgresql+psycopg://prestamos:<password>@localhost:5432/prestamos`, `JWT_SECRET=<cambiar>`, `JWT_EXPIRE_MINUTES=60`, `CORS_ORIGINS=http://localhost:5173`, `SEED_PASSWORD=<demo>`, `TZ_NAME=America/Bogota`
-- [ ] T010 [A] Implementar settings en `backend/app/config.py` con `pydantic-settings` leyendo `.env`
-- [ ] T011 [A] Implementar `backend/app/errors.py`: clase `AppError(status, code, detail, fields=None)` y handlers globales que respondan `{"detail", "code", "fields"?}`; convertir `RequestValidationError` a 422 `VALIDATION_ERROR` con `fields[{field,message}]` en español; 404/405 de Starlette a `NOT_FOUND`; excepciones no controladas a 500 `INTERNAL_ERROR` sin trazas (log solo en servidor)
-- [ ] T012 [A] Implementar `backend/app/security.py`: `hash_password`/`verify_password` (bcrypt) y `create_access_token`/`decode_token` (PyJWT HS256, `sub`=user id, `role`, `exp` según `JWT_EXPIRE_MINUTES`); token vencido → `AppError(401,"TOKEN_EXPIRED")`
-- [ ] T013 [A] Implementar `backend/app/deps.py`: `get_current_user` (Bearer obligatorio → 401 `NOT_AUTHENTICATED`; usuario inactivo → 401) y `require_roles(*roles)` (→ 403 `FORBIDDEN`) (depende de T012 y del modelo `User` de T025)
-- [ ] T014 [A] Crear `backend/app/schemas/auth.py` (`LoginIn{username,password}`, `TokenOut{access_token,token_type,expires_in,user}`, `UserOut`) y `backend/app/schemas/common.py` (`Page[T]{items,total,page,size}`, `UserRef`)
-- [ ] T015 [A] Implementar `backend/app/api/auth.py`: `POST /api/auth/login` (401 `INVALID_CREDENTIALS` con mismo mensaje para usuario inexistente o clave errada) y `GET /api/auth/me`
-- [ ] T016 [A] Crear `backend/app/main.py`: FastAPI con título/descr. en español, CORS desde settings, registro de handlers de T011, routers bajo prefijo `/api`, `GET /api/health` → `{"status":"ok"}`
-- [ ] T017 [P] [A] Inicializar frontend en `frontend/` con Vite (React + TypeScript), dependencias `react-router-dom@6`, `@tanstack/react-query@5`; crear `frontend/.env.example` con `VITE_API_URL=http://localhost:8000/api`
-- [ ] T018 [A] Implementar `frontend/src/api/client.ts`: `apiFetch<T>(path, {method, body, query})` que agrega `Authorization: Bearer` desde `sessionStorage`, serializa JSON, y lanza `ApiError{status, code, detail, fields}`; en 401 limpia sesión y redirige a `/login`
-- [ ] T019 [A] Crear `frontend/src/api/types.ts` con todos los tipos de "Esquemas compartidos" de `contracts/api.md` (Role, LoanStatus, EffectiveStatus, Resource, ResourceDetail, Loan, Movement, Page…)
-- [ ] T020 [A] Implementar `frontend/src/auth/AuthContext.tsx` (`useAuth()`: user, login, logout, hasRole) y `frontend/src/auth/ProtectedRoute.tsx` (redirige a `/login` sin sesión; muestra "No autorizado" si el rol no aplica)
-- [ ] T021 [A] Implementar `frontend/src/auth/LoginPage.tsx` con validación de campos vacíos, mensaje de error del API y redirección según rol (SOLICITANTE→`/catalogo`, RESPONSABLE→`/gestion`, COORDINACION→`/tablero`)
-- [ ] T091 [A] Crear `backend/app/schemas/loan.py` sección A con `LoanOut` completo según contrato (incluye `effective_status`, `days_overdue`, refs de usuarios) y `LoanFilters`; **adelantado a F1A** porque B lo necesita desde US3
-- [ ] T092 [A] Implementar en `backend/app/services/loans.py` `list_loans` (SOLICITANTE solo propias; filtros `status` incl. `VENCIDA`, `resource_id`, `category_id`, `requester_id` solo R/C, `from`/`to`, paginación, `sort=-created_at`) y `get_loan` (404 si no existe o es ajena para SOLICITANTE); **adelantado a F1A**
-- [ ] T093 [A] Implementar en `backend/app/api/loans.py` `GET /api/loans` y `GET /api/loans/{id}`; **adelantado a F1A** (B los usa en la bandeja `/gestion` y en `LoanDetailPage`)
+- [x] T008 [A] Crear `backend/requirements.txt` con versiones fijadas: fastapi, uvicorn[standard], pydantic, pydantic-settings, sqlalchemy>=2, alembic, psycopg[binary]>=3, PyJWT, passlib[bcrypt], python-multipart, pytest, httpx
+- [x] T009 [P] [A] Crear `backend/.env.example` (sin secretos reales) con `DATABASE_URL=postgresql+psycopg://prestamos:<password>@localhost:5432/prestamos`, `JWT_SECRET=<cambiar>`, `JWT_EXPIRE_MINUTES=60`, `CORS_ORIGINS=http://localhost:5173`, `SEED_PASSWORD=<demo>`, `TZ_NAME=America/Bogota`
+- [x] T010 [A] Implementar settings en `backend/app/config.py` con `pydantic-settings` leyendo `.env`
+- [x] T011 [A] Implementar `backend/app/errors.py`: clase `AppError(status, code, detail, fields=None)` y handlers globales que respondan `{"detail", "code", "fields"?}`; convertir `RequestValidationError` a 422 `VALIDATION_ERROR` con `fields[{field,message}]` en español; 404/405 de Starlette a `NOT_FOUND`; excepciones no controladas a 500 `INTERNAL_ERROR` sin trazas (log solo en servidor)
+- [x] T012 [A] Implementar `backend/app/security.py`: `hash_password`/`verify_password` (bcrypt) y `create_access_token`/`decode_token` (PyJWT HS256, `sub`=user id, `role`, `exp` según `JWT_EXPIRE_MINUTES`); token vencido → `AppError(401,"TOKEN_EXPIRED")`
+- [x] T013 [A] Implementar `backend/app/deps.py`: `get_current_user` (Bearer obligatorio → 401 `NOT_AUTHENTICATED`; usuario inactivo → 401) y `require_roles(*roles)` (→ 403 `FORBIDDEN`) (depende de T012 y del modelo `User` de T025)
+- [x] T014 [A] Crear `backend/app/schemas/auth.py` (`LoginIn{username,password}`, `TokenOut{access_token,token_type,expires_in,user}`, `UserOut`) y `backend/app/schemas/common.py` (`Page[T]{items,total,page,size}`, `UserRef`)
+- [x] T015 [A] Implementar `backend/app/api/auth.py`: `POST /api/auth/login` (401 `INVALID_CREDENTIALS` con mismo mensaje para usuario inexistente o clave errada) y `GET /api/auth/me`
+- [x] T016 [A] Crear `backend/app/main.py`: FastAPI con título/descr. en español, CORS desde settings, registro de handlers de T011, routers bajo prefijo `/api`, `GET /api/health` → `{"status":"ok"}`
+- [x] T017 [P] [A] Inicializar frontend en `frontend/` con Vite (React + TypeScript), dependencias `react-router-dom@6`, `@tanstack/react-query@5`; crear `frontend/.env.example` con `VITE_API_URL=http://localhost:8000/api`
+- [x] T018 [A] Implementar `frontend/src/api/client.ts`: `apiFetch<T>(path, {method, body, query})` que agrega `Authorization: Bearer` desde `sessionStorage`, serializa JSON, y lanza `ApiError{status, code, detail, fields}`; en 401 limpia sesión y redirige a `/login`
+- [x] T019 [A] Crear `frontend/src/api/types.ts` con todos los tipos de "Esquemas compartidos" de `contracts/api.md` (Role, LoanStatus, EffectiveStatus, Resource, ResourceDetail, Loan, Movement, Page…)
+- [x] T020 [A] Implementar `frontend/src/auth/AuthContext.tsx` (`useAuth()`: user, login, logout, hasRole) y `frontend/src/auth/ProtectedRoute.tsx` (redirige a `/login` sin sesión; muestra "No autorizado" si el rol no aplica)
+- [x] T021 [A] Implementar `frontend/src/auth/LoginPage.tsx` con validación de campos vacíos, mensaje de error del API y redirección según rol (SOLICITANTE→`/catalogo`, RESPONSABLE→`/gestion`, COORDINACION→`/tablero`)
+- [x] T091 [A] Crear `backend/app/schemas/loan.py` sección A con `LoanOut` completo según contrato (incluye `effective_status`, `days_overdue`, refs de usuarios) y `LoanFilters`; **adelantado a F1A** porque B lo necesita desde US3
+- [x] T092 [A] Implementar en `backend/app/services/loans.py` `list_loans` (SOLICITANTE solo propias; filtros `status` incl. `VENCIDA`, `resource_id`, `category_id`, `requester_id` solo R/C, `from`/`to`, paginación, `sort=-created_at`) y `get_loan` (404 si no existe o es ajena para SOLICITANTE); **adelantado a F1A**
+- [x] T093 [A] Implementar en `backend/app/api/loans.py` `GET /api/loans` y `GET /api/loans/{id}`; **adelantado a F1A** (B los usa en la bandeja `/gestion` y en `LoanDetailPage`)
 - [ ] T022 [A] Abrir PR `feat/f1a-auth` (Revisor: B) con evidencia de login exitoso/fallido en `/docs` (la evidencia requiere el PR base de B, ver T094)
 
 ### F1B — Datos, reglas compartidas y layout (Persona B) · Ramas `feat/f1b-base` (primero) y `feat/f1b-datos`
@@ -112,11 +112,11 @@ cada historia. Las pruebas automatizadas son **opcionales** y están en la fase 
 
 **Independent Test**: Con datos semilla, filtrar portátiles por rango y comprobar que la disponibilidad coincide con los préstamos APROBADA/ACTIVA; consultar id inexistente → 404.
 
-- [ ] T038 [P] [US1] [A] Crear `backend/app/schemas/resource.py`: `CategoryOut`, `ResourceOut` (incluye `available: bool|null`, `unavailable_reason: PRESTADO|RESERVADO|NO_ACTIVO|null`), `ResourceDetailOut` (`busy_periods[{loan_id,start_at,end_at|null,status}]`)
-- [ ] T039 [US1] [A] Implementar en `backend/app/services/resources.py`: `list_resources(db, user, category_id, q, status, from_, to, available_only, page, size≤100)` usando `rules.find_overlaps` (excluir `DADO_DE_BAJA` para SOLICITANTE; `from`/`to` ambos o ninguno y `from < to` → 422) y `get_resource_detail(db, id)` (404 `NOT_FOUND`)
-- [ ] T040 [US1] [A] Implementar `backend/app/api/categories.py` (`GET /api/categories`) y `GET /api/resources`, `GET /api/resources/{id}` en `backend/app/api/resources.py` con `get_current_user`
-- [ ] T041 [P] [US1] [A] Implementar `frontend/src/pages/catalog/CatalogPage.tsx`: filtros categoría, texto, rango fecha/hora y "solo disponibles"; tabla con código, nombre, categoría, `StatusBadge`, disponibilidad y motivo; botón "Solicitar" (solo SOLICITANTE, deshabilitado si no disponible o `teacher_only` para ESTUDIANTE); estados de carga/vacío/error
-- [ ] T042 [P] [US1] [A] Implementar `frontend/src/pages/catalog/ResourceDetailPage.tsx`: datos del recurso y lista de periodos ocupados (vencido = "hasta devolución"); mensaje controlado si 404
+- [x] T038 [P] [US1] [A] Crear `backend/app/schemas/resource.py`: `CategoryOut`, `ResourceOut` (incluye `available: bool|null`, `unavailable_reason: PRESTADO|RESERVADO|NO_ACTIVO|null`), `ResourceDetailOut` (`busy_periods[{loan_id,start_at,end_at|null,status}]`)
+- [x] T039 [US1] [A] Implementar en `backend/app/services/resources.py`: `list_resources(db, user, category_id, q, status, from_, to, available_only, page, size≤100)` usando `rules.find_overlaps` (excluir `DADO_DE_BAJA` para SOLICITANTE; `from`/`to` ambos o ninguno y `from < to` → 422) y `get_resource_detail(db, id)` (404 `NOT_FOUND`)
+- [x] T040 [US1] [A] Implementar `backend/app/api/categories.py` (`GET /api/categories`) y `GET /api/resources`, `GET /api/resources/{id}` en `backend/app/api/resources.py` con `get_current_user`
+- [x] T041 [P] [US1] [A] Implementar `frontend/src/pages/catalog/CatalogPage.tsx`: filtros categoría, texto, rango fecha/hora y "solo disponibles"; tabla con código, nombre, categoría, `StatusBadge`, disponibilidad y motivo; botón "Solicitar" (solo SOLICITANTE, deshabilitado si no disponible o `teacher_only` para ESTUDIANTE); estados de carga/vacío/error
+- [x] T042 [P] [US1] [A] Implementar `frontend/src/pages/catalog/ResourceDetailPage.tsx`: datos del recurso y lista de periodos ocupados (vencido = "hasta devolución"); mensaje controlado si 404
 - [ ] T043 [US1] [A] Documentar PF-01 (consulta catálogo y disponibilidad) y PF-02 (recurso inexistente → 404 `NOT_FOUND`) en `docs/pruebas.md` con plantilla completa (ID, requisito, precondiciones, pasos, datos, esperado, obtenido, estado, evidencia, método/HTTP); agregar requests a `docs/pruebas/prestamos.http`; capturas en `evidencias/PF-01/`, `evidencias/PF-02/`
 - [ ] T044 [US1] [A] Actualizar fila CA-01 en `docs/trazabilidad.md` y abrir PR (Revisor: B)
 
@@ -133,13 +133,13 @@ cada historia. Las pruebas automatizadas son **opcionales** y están en la fase 
 
 **Independent Test**: `est.ana` crea solicitud válida → PENDIENTE recuperable; casos inválidos (fechas, propósito, solo docentes, `est.luis` vencido, límite) → rechazados sin persistir.
 
-- [ ] T045 [P] [US2] [A] Agregar en `backend/app/schemas/loan.py` (sección A): `LoanCreate{resource_id, start_at, end_at, purpose(10–500)}` con validador `end_at > start_at` y `CancelIn{note?}` (`LoanOut` y `LoanFilters` ya están en T091)
-- [ ] T046 [US2] [A] Implementar en `backend/app/services/loans.py`: `create_loan` (rol SOLICITANTE; `lock_user` + `rules.check_can_request`; estado PENDIENTE; `movements.record(None→PENDIENTE)`) y `cancel_loan` (`list_loans`/`get_loan` ya están en T092) (dueño; `loan_states.assert_transition('cancel')`; movimiento)
-- [ ] T047 [US2] [A] Implementar en `backend/app/api/loans.py` (sección A): `POST /api/loans` (201) y `POST /api/loans/{id}/cancel` (los GET ya están en T093)
-- [ ] T048 [P] [US2] [A] Implementar `frontend/src/pages/requests/NewRequestPage.tsx`: recurso preseleccionado desde catálogo, inicio/fin (`DateTimeField`), propósito con contador; validación en cliente (fin > inicio, no pasado, duración ≤ máx. categoría, propósito 10–500) y errores del servidor por campo con `ErrorAlert`
-- [ ] T049 [P] [US2] [A] Implementar `frontend/src/pages/requests/MyRequestsPage.tsx`: lista paginada propia con `StatusBadge`, motivo de rechazo visible, botón "Cancelar" (PENDIENTE/APROBADA) con `ConfirmDialog`, enlace a `/prestamos/:id`
-- [ ] T095 [US2] [A] Implementar `GET /api/loans/{id}/movements` en `backend/app/api/loans.py` (S dueño / R / C; orden `created_at` asc; 404 si ajeno para S) y `MovementOut` en `backend/app/schemas/movement.py`; movido desde US5 para descargar a B
-- [ ] T096 [P] [US2] [A] Implementar `frontend/src/pages/loans/MovementTimeline.tsx` (actor, fecha, estado anterior→nuevo, nota); B lo integra en `LoanDetailPage` (T067)
+- [x] T045 [P] [US2] [A] Agregar en `backend/app/schemas/loan.py` (sección A): `LoanCreate{resource_id, start_at, end_at, purpose(10–500)}` con validador `end_at > start_at` y `CancelIn{note?}` (`LoanOut` y `LoanFilters` ya están en T091)
+- [x] T046 [US2] [A] Implementar en `backend/app/services/loans.py`: `create_loan` (rol SOLICITANTE; `lock_user` + `rules.check_can_request`; estado PENDIENTE; `movements.record(None→PENDIENTE)`) y `cancel_loan` (`list_loans`/`get_loan` ya están en T092) (dueño; `loan_states.assert_transition('cancel')`; movimiento)
+- [x] T047 [US2] [A] Implementar en `backend/app/api/loans.py` (sección A): `POST /api/loans` (201) y `POST /api/loans/{id}/cancel` (los GET ya están en T093)
+- [x] T048 [P] [US2] [A] Implementar `frontend/src/pages/requests/NewRequestPage.tsx`: recurso preseleccionado desde catálogo, inicio/fin (`DateTimeField`), propósito con contador; validación en cliente (fin > inicio, no pasado, duración ≤ máx. categoría, propósito 10–500) y errores del servidor por campo con `ErrorAlert`
+- [x] T049 [P] [US2] [A] Implementar `frontend/src/pages/requests/MyRequestsPage.tsx`: lista paginada propia con `StatusBadge`, motivo de rechazo visible, botón "Cancelar" (PENDIENTE/APROBADA) con `ConfirmDialog`, enlace a `/prestamos/:id`
+- [x] T095 [US2] [A] Implementar `GET /api/loans/{id}/movements` en `backend/app/api/loans.py` (S dueño / R / C; orden `created_at` asc; 404 si ajeno para S) y `MovementOut` en `backend/app/schemas/movement.py`; movido desde US5 para descargar a B
+- [x] T096 [P] [US2] [A] Implementar `frontend/src/pages/loans/MovementTimeline.tsx` (actor, fecha, estado anterior→nuevo, nota); B lo integra en `LoanDetailPage` (T067)
 - [ ] T050 [US2] [A] Documentar PF-03 (solicitud válida almacenada y recuperable, 201) y PF-04 (datos inválidos 422 / `TEACHER_ONLY` 403 / `OVERDUE_BLOCK` 409 / `LIMIT_REACHED` 409, verificando con consulta SQL que no se persistió) en `docs/pruebas.md`, `docs/pruebas/prestamos.http` y `evidencias/PF-03/`, `evidencias/PF-04/`
 - [ ] T051 [US2] [A] Actualizar fila CA-02 en `docs/trazabilidad.md` y abrir PR (Revisor: B)
 
@@ -214,11 +214,11 @@ cada historia. Las pruebas automatizadas son **opcionales** y están en la fase 
 
 **Independent Test**: `coord.sofia` ve totales por estado que coinciden con `SELECT status, count(*) FROM loans`; lista de vencidos con días de retraso; filtros del historial funcionan; acciones de gestión → 403.
 
-- [ ] T070 [P] [US6] [A] Crear `backend/app/schemas/dashboard.py` (`SummaryOut{loans_by_status (ACTIVA excluye vencidas, + VENCIDA), resources_by_status, active_loans, overdue_loans}`, `UsageOut{by_category[{category,loans,hours}], by_resource[{resource_id,code,name,loans,hours,last_loan_at}]}`)
-- [ ] T071 [US6] [A] Implementar `backend/app/services/dashboard.py`: `get_summary(db)` y `get_usage(db, from_, to, category_id)` (default últimos 30 días; cuenta operaciones ACTIVA/DEVUELTA que se solapan con el rango; horas = `coalesce(returned_at, now) - delivered_at` recortado al rango)
-- [ ] T072 [US6] [A] Implementar `backend/app/api/dashboard.py`: `GET /api/dashboard/summary` y `GET /api/dashboard/usage` con `require_roles("RESPONSABLE","COORDINACION")`
-- [ ] T073 [P] [US6] [A] Implementar `frontend/src/pages/dashboard/DashboardPage.tsx` (`/tablero`): tarjetas de totales por estado, tabla de préstamos activos y vencidos (recurso, solicitante, responsable de entrega, fin previsto, días de retraso), uso por categoría y por recurso con rango de fechas
-- [ ] T074 [P] [US6] [A] Implementar `frontend/src/pages/dashboard/HistoryPage.tsx` (`/historial`): `GET /api/loans` con filtros rango, estado, categoría, recurso, solicitante; enlace a detalle de solo lectura
+- [x] T070 [P] [US6] [A] Crear `backend/app/schemas/dashboard.py` (`SummaryOut{loans_by_status (ACTIVA excluye vencidas, + VENCIDA), resources_by_status, active_loans, overdue_loans}`, `UsageOut{by_category[{category,loans,hours}], by_resource[{resource_id,code,name,loans,hours,last_loan_at}]}`)
+- [x] T071 [US6] [A] Implementar `backend/app/services/dashboard.py`: `get_summary(db)` y `get_usage(db, from_, to, category_id)` (default últimos 30 días; cuenta operaciones ACTIVA/DEVUELTA que se solapan con el rango; horas = `coalesce(returned_at, now) - delivered_at` recortado al rango)
+- [x] T072 [US6] [A] Implementar `backend/app/api/dashboard.py`: `GET /api/dashboard/summary` y `GET /api/dashboard/usage` con `require_roles("RESPONSABLE","COORDINACION")`
+- [x] T073 [P] [US6] [A] Implementar `frontend/src/pages/dashboard/DashboardPage.tsx` (`/tablero`): tarjetas de totales por estado, tabla de préstamos activos y vencidos (recurso, solicitante, responsable de entrega, fin previsto, días de retraso), uso por categoría y por recurso con rango de fechas
+- [x] T074 [P] [US6] [A] Implementar `frontend/src/pages/dashboard/HistoryPage.tsx` (`/historial`): `GET /api/loans` con filtros rango, estado, categoría, recurso, solicitante; enlace a detalle de solo lectura
 - [ ] T075 [US6] [A] Documentar PF-11 (información consolidada y consistencia: comparar totales del tablero con consultas SQL de conteo y verificar integridad referencial loans↔resources↔users↔movements) en `docs/pruebas.md`, `evidencias/PF-11/`
 - [ ] T076 [US6] [A] Actualizar fila CA-06 en `docs/trazabilidad.md` y abrir PR (Revisor: B)
 
@@ -233,10 +233,10 @@ cada historia. Las pruebas automatizadas son **opcionales** y están en la fase 
 
 **Independent Test**: Crear `PORT-005` → aparece ACTIVO en catálogo; código duplicado → 409; pasar a EN_REVISION un recurso con ACTIVA → 409 `RESOURCE_IN_USE`.
 
-- [ ] T077 [US7] [A] Agregar a `backend/app/schemas/resource.py` `ResourceCreate{code (^[A-Z]{3,5}-\d{3,4}$), name(1–120), description?(≤1000), category_id, teacher_only=false}` y `ResourceUpdate` parcial (sin `code`)
-- [ ] T078 [US7] [A] Implementar en `backend/app/services/resources.py`: `create_resource` (409 `DUPLICATE_CODE`) y `update_resource` (si nuevo `status` es `EN_REVISION`/`DADO_DE_BAJA` y hay préstamo `ACTIVA` → 409 `RESOURCE_IN_USE`; sin borrado físico)
-- [ ] T079 [US7] [A] Agregar `POST /api/resources` (201) y `PATCH /api/resources/{id}` en `backend/app/api/resources.py` con `require_roles("RESPONSABLE")`
-- [ ] T080 [P] [US7] [A] Implementar `frontend/src/pages/resources/ResourceFormPage.tsx` (crear/editar, selector de categoría y estado, validación de patrón de código) y botón "Nuevo recurso"/"Editar" en `CatalogPage` visible solo para RESPONSABLE
+- [x] T077 [US7] [A] Agregar a `backend/app/schemas/resource.py` `ResourceCreate{code (^[A-Z]{3,5}-\d{3,4}$), name(1–120), description?(≤1000), category_id, teacher_only=false}` y `ResourceUpdate` parcial (sin `code`)
+- [x] T078 [US7] [A] Implementar en `backend/app/services/resources.py`: `create_resource` (409 `DUPLICATE_CODE`) y `update_resource` (si nuevo `status` es `EN_REVISION`/`DADO_DE_BAJA` y hay préstamo `ACTIVA` → 409 `RESOURCE_IN_USE`; sin borrado físico)
+- [x] T079 [US7] [A] Agregar `POST /api/resources` (201) y `PATCH /api/resources/{id}` en `backend/app/api/resources.py` con `require_roles("RESPONSABLE")`
+- [x] T080 [P] [US7] [A] Implementar `frontend/src/pages/resources/ResourceFormPage.tsx` (crear/editar, selector de categoría y estado, validación de patrón de código) y botón "Nuevo recurso"/"Editar" en `CatalogPage` visible solo para RESPONSABLE
 - [ ] T081 [US7] [A] Documentar PF-13 (crear recurso y duplicado → 409) y PF-14 (cambio de estado bloqueado con préstamo activo; SOLICITANTE intenta crear → 403) en `docs/pruebas.md`, `evidencias/PF-13/`, `evidencias/PF-14/`; actualizar `docs/trazabilidad.md` y abrir PR (Revisor: B)
 
 ---
