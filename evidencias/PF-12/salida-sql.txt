@@ -1,0 +1,13 @@
+ id |  status  | entregado | devuelto 
+----+----------+-----------+----------
+ 10 | DEVUELTA | t         | t
+(1 row)
+
+ from_status | to_status |                    note                     
+-------------+-----------+---------------------------------------------
+             | PENDIENTE | 
+ PENDIENTE   | APROBADA  | 
+ APROBADA    | ACTIVA    | Condición de salida: Completo, con cargador
+ ACTIVA      | DEVUELTA  | 
+(4 rows)
+

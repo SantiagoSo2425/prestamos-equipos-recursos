@@ -8,7 +8,8 @@ import { statusLabel } from '../common/status'
 /** Historial de movimientos de un préstamo (creación → aprobación → entrega → devolución). */
 export default function MovementTimeline({ loanId }: { loanId: number }) {
   const q = useQuery({
-    queryKey: ['loan-movements', loanId],
+    // Prefijo ['loan', id]: se invalida junto con el detalle cuando cambia el estado del préstamo.
+    queryKey: ['loan', loanId, 'movements'],
     queryFn: () => apiFetch<Movement[]>(`/loans/${loanId}/movements`),
   })
 
