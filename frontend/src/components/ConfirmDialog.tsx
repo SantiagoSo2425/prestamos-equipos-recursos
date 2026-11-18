@@ -10,6 +10,8 @@ interface Props {
   textRequired?: boolean
   minLength?: number
   busy?: boolean
+  /** Pinta el botón de confirmación como acción destructiva. */
+  danger?: boolean
   error?: unknown
   onConfirm: (text: string) => void
   onCancel: () => void
@@ -23,6 +25,7 @@ export default function ConfirmDialog({
   textRequired,
   minLength = 0,
   busy,
+  danger,
   error,
   onConfirm,
   onCancel,
@@ -45,12 +48,12 @@ export default function ConfirmDialog({
         )}
         <ErrorAlert error={error} />
         <div className="actions">
-          <button type="button" onClick={onCancel} disabled={busy}>
+          <button type="button" className="ghost" onClick={onCancel} disabled={busy}>
             Cancelar
           </button>
           <button
             type="button"
-            className="primary"
+            className={danger ? 'danger' : 'primary'}
             disabled={busy || invalid}
             onClick={() => onConfirm(trimmed)}
           >

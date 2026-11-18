@@ -3,6 +3,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from '../../api/client'
 import type { Category, Resource, ResourceDetail, ResourceStatus } from '../../api/types'
+import PageHeader from '../../components/PageHeader'
+import { useToast } from '../../components/toast-context'
 import ApiErrorMessage from '../common/ApiErrorMessage'
 import { fieldError } from '../common/errors'
 import { statusLabel } from '../common/status'
@@ -19,13 +21,13 @@ export default function ResourceFormPage() {
     retry: false,
   })
 
-  if (id && existing.isLoading) return <main>Cargando…</main>
+  if (id && existing.isLoading) return <section>Cargando…</section>
   if (id && existing.isError)
     return (
-      <main>
+      <section>
         <ApiErrorMessage error={existing.error} />
         <Link to="/catalogo">Volver al catálogo</Link>
-      </main>
+      </section>
     )
   return <ResourceForm id={id} initial={existing.data} />
 }
@@ -34,6 +36,7 @@ function ResourceForm({ id, initial }: { id?: string; initial?: ResourceDetail }
   const editing = !!id
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const toast = useToast()
 
   const [code, setCode] = useState(initial?.code ?? '')
   const [name, setName] = useState(initial?.name ?? '')
@@ -74,6 +77,7 @@ function ResourceForm({ id, initial }: { id?: string; initial?: ResourceDetail }
       })
     },
     onSuccess: () => {
+      toast.success(editing ? 'Recurso actualizado.' : 'Recurso creado.')
       void queryClient.invalidateQueries({ queryKey: ['resources'] })
       void queryClient.invalidateQueries({ queryKey: ['resource'] })
       navigate('/catalogo')
@@ -96,9 +100,13 @@ function ResourceForm({ id, initial }: { id?: string; initial?: ResourceDetail }
   const shown = (f: string) => errors[f] ?? fieldError(save.error, f)
 
   return (
-    <main>
-      <h1>{editing ? 'Editar recurso' : 'Nuevo recurso'}</h1>
-      <form className="form" onSubmit={onSubmit} noValidate>
+    <section>
+      <PageHeader
+        back={{ to: '/catalogo', label: 'Catálogo' }}
+        title={editing ? 'Editar recurso' : 'Nuevo recurso'}
+        subtitle={editing ? 'Actualiza los datos o el estado operativo del recurso.' : 'Registra un nuevo equipo en el inventario.'}
+      />
+      <form className="card form" style={{ maxWidth: 620 }} onSubmit={onSubmit} noValidate>
         <label>
           Código
           <input
@@ -164,6 +172,6 @@ function ResourceForm({ id, initial }: { id?: string; initial?: ResourceDetail }
           </Link>
         </div>
       </form>
-    </main>
+    </section>
   )
 }
