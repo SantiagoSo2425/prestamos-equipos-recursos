@@ -6,7 +6,7 @@ Sección B: esquemas de acciones (`ApproveIn`, `RejectIn`, `DeliverIn`, `ReturnI
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 
 from app.schemas.auth import RequesterType
 from app.schemas.common import UserRef
@@ -66,6 +66,40 @@ class LoanFilters(BaseModel):
     page: int = 1
     size: int = 20
     sort: Literal["-created_at", "created_at", "-start_at", "start_at"] = "-created_at"
+
+
+class LoanCreate(BaseModel):
+    resource_id: int
+    start_at: datetime
+    end_at: datetime
+    purpose: str = Field(min_length=10, max_length=500)
+
+    @field_validator("purpose")
+    @classmethod
+    def _purpose_trim(cls, v: str) -> str:
+        v = v.strip()
+        if len(v) < 10:
+            raise ValueError("El propósito debe tener al menos 10 caracteres.")
+        return v
+
+    @field_validator("start_at", "end_at")
+    @classmethod
+    def _con_zona(cls, v: datetime) -> datetime:
+        if v.tzinfo is None:
+            raise ValueError("Debe incluir zona horaria (ej. 2026-11-20T08:00:00-05:00).")
+        return v
+
+    @field_validator("end_at")
+    @classmethod
+    def _fin_posterior(cls, v: datetime, info: ValidationInfo) -> datetime:
+        start = info.data.get("start_at")
+        if start is not None and v <= start:
+            raise ValueError("Debe ser posterior a la fecha de inicio.")
+        return v
+
+
+class CancelIn(BaseModel):
+    note: str | None = Field(default=None, max_length=1000)
 
 
 # ---------------------------------------------------------------- Sección B
