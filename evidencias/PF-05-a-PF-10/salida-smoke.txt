@@ -1,0 +1,8 @@
+Ejecución de backend/scripts/smoke_flow.py contra PostgreSQL 16 (Docker) con la semilla.
+PF-05: aprobar A 200 APROBADA | aprobar B solapada 409 OVERLAP | rechazar sin motivo 422 | rechazar B 200 RECHAZADA | aprobar A de nuevo 409 INVALID_TRANSITION
+PF-06: S aprueba 403 FORBIDDEN | C aprueba 403 FORBIDDEN | sin token 401 NOT_AUTHENTICATED
+PF-07/08: entregar PENDIENTE 409 INVALID_TRANSITION | sin condición 422 | entregar A 200 ACTIVA (delivered_by resp.carlos)
+PF-09: ACTIVA = [INST-001, CAM-001] ; VENCIDA = [PORT-001, 3 días]
+PF-10: CON_DANO sin notas 422 | CON_DANO 200 DEVUELTA, CAM-001 -> EN_REVISION | devolver de nuevo 409 INVALID_TRANSITION
+Movimientos del préstamo A: None->PENDIENTE, PENDIENTE->APROBADA, APROBADA->ACTIVA, ACTIVA->DEVUELTA (nota: daño y EN_REVISION)
+Vencida devuelta BUENO: 200, is_late = true
