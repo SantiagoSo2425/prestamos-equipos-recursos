@@ -1,0 +1,41 @@
+# Entorno local con Docker: PostgreSQL 16 + backend. El frontend se ejecuta aparte (npm run dev).
+# Los puertos del host son configurables para no chocar con otros servicios locales.
+#
+#   docker compose up --build -d
+#   docker compose run --rm -e SEED_PASSWORD='<clave-de-demo>' backend python -m app.seed
+#   docker compose down            # añade -v para borrar también la base de datos
+name: prestamos
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: prestamos
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-prestamos_local}
+      POSTGRES_DB: prestamos
+    ports:
+      - "127.0.0.1:${DB_PORT:-55433}:5432"
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U prestamos -d prestamos"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://prestamos:${POSTGRES_PASSWORD:-prestamos_local}@db:5432/prestamos
+      JWT_SECRET: ${JWT_SECRET:-clave-solo-para-desarrollo-local-0123456789abcdef}
+      JWT_EXPIRE_MINUTES: 60
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+      TZ_NAME: America/Bogota
+    ports:
+      - "127.0.0.1:${API_PORT:-8090}:8000"
+
+volumes:
+  dbdata:

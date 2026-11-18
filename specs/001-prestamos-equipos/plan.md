@@ -115,11 +115,11 @@ frontend/
         ├── catalog/             # [A] CatalogPage, ResourceDetailPage
         ├── resources/           # [A] ResourceFormPage (admin)
         ├── requests/            # [A] NewRequestPage, MyRequestsPage
-        ├── review/              # [B] ReviewInboxPage, LoanManagePage (aprobar/rechazar/entregar/devolver)
+        ├── review/              # [B] ReviewInboxPage (bandeja /gestion)
         ├── loans/               # [B] LoanDetailPage + historial de movimientos
         └── dashboard/           # [A] DashboardPage, HistoryPage
 
-docs/            requisitos.md [A] · diseno.md [B] · trazabilidad.md [A+B] · pruebas.md [A+B] · pruebas/prestamos.http
+docs/            requisitos.md [B] · diseno.md [B] · trazabilidad.md [B, filas de A y B en sus PR] · pruebas.md [A+B] · pruebas/prestamos.http
 evidencias/      PF-01…PF-12 (capturas por prueba)
 README.md        [A, con aportes de B]
 ```
@@ -135,7 +135,7 @@ persona trabaje en archivos distintos; los únicos archivos compartidos (`api/lo
 
 | Persona | Fundación | Historias | Pruebas guía | Documentos |
 |---|---|---|---|---|
-| **A — Santiago** | Esqueleto backend (`main`, `config`, `errors`), autenticación JWT/roles (back + front: cliente API, AuthContext, login, rutas protegidas) | **US1** Catálogo/disponibilidad (CA-01) · **US7** Administración de recursos · **US2** Solicitudes (CA-02) · **US6** Tablero coordinación (CA-06) | PF-01, 02, 03, 04, 11 | `docs/requisitos.md`, README, registro de entrevista |
+| **A — Santiago** | Esqueleto backend (`main`, `config`, `errors`), autenticación JWT/roles (back + front: cliente API, AuthContext, login, rutas protegidas), `LoanOut` y lectura de préstamos (`GET /loans`, `GET /loans/{id}`) | **US1** Catálogo/disponibilidad (CA-01) · **US2** Solicitudes (CA-02, incluye `GET /loans/{id}/movements` y `MovementTimeline`) · **US7** Administración de recursos · **US6** Tablero coordinación (CA-06) | PF-01, 02, 03, 04, 11 | README |
 | **B — Persona B** | Modelos + migración (incl. exclusión) + semillas, máquina de estados, `rules.py`, `movements.py`; layout frontend (router, NavBar por rol, componentes compartidos) | **US3** Evaluación (CA-03) · **US4** Entrega/préstamo activo (CA-04) · **US5** Devolución e historial (CA-05) | PF-05, 06, 07, 08, 09, 10 | `docs/diseno.md` (diagramas, modelo, API) |
 | **Ambos** | Revisar y aprobar `contracts/api.md` + `api/types.ts` | Integración final | **PF-12** flujo integral (A solicita, B gestiona) | `docs/trazabilidad.md`, `docs/pruebas.md`, `evidencias/` |
 
@@ -153,8 +153,8 @@ gantt
     section Persona A
     F1A Esqueleto + Auth (back/front)           :a1, after f0, 2
     US1 Catálogo                                :a2, after a1, 2
-    US7 Admin recursos                          :a3, after a2, 1
-    US2 Solicitudes                             :a4, after a3, 2
+    US2 Solicitudes                             :a3, after a2, 2
+    US7 Admin recursos                          :a4, after a3, 1
     US6 Tablero                                 :a5, after a4, 2
     section Persona B
     F1B Modelos + migración + seed + layout     :b1, after f0, 2
@@ -189,7 +189,8 @@ gantt
 | `movements.record(db, loan, actor, from_status, to_status, note)` | B | A (crear/cancelar) | inserta `LoanMovement` |
 | `loan_states.assert_transition(loan, action, user)` | B | A (cancelar) | lanza `INVALID_TRANSITION` |
 | `<Layout>`, `<StatusBadge>`, `<ErrorAlert>`, `<DataTable>` | B | A | componentes React |
-| `LoanOut` (schema de salida de `Loan`) | A | B | según contrato |
+| `LoanOut` (schema de salida de `Loan`), `GET /loans`, `GET /loans/{id}` | A (en F1A) | B | según contrato; B los usa desde US3 |
+| `GET /loans/{id}/movements`, `<MovementTimeline>` | A (en US2) | B (US5) | según contrato |
 
 ## Flujo Git y pull requests
 
@@ -210,7 +211,7 @@ gantt
 
 | Entregable guía | Fuente Spec Kit | Responsable |
 |---|---|---|
-| `docs/requisitos.md` (Act. 2) | `spec.md` (US, FR→RF-XX, supuestos) + registro de entrevista | A |
+| `docs/requisitos.md` (Act. 2) | `spec.md` (US, FR→RF-XX, supuestos) + registro de entrevista | B |
 | `docs/diseno.md` (Act. 3) | `plan.md`, `research.md`, `data-model.md`, `contracts/api.md`, prototipos | B |
 | Código + BD (Act. 4) | `tasks.md` | A y B |
 | Git/GitHub (Act. 5) | Flujo de ramas/PR de este plan | A y B |

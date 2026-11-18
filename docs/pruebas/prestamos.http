@@ -1,0 +1,265 @@
+# Colección de pruebas de la API (extensión REST Client de VS Code o JetBrains HTTP Client).
+# Requiere backend en marcha y datos de `python -m app.seed`.
+# Contraseña de demo: valor de SEED_PASSWORD en backend/.env (no se escribe aquí).
+
+# Los `resource_id` y las fechas son de ejemplo: ajústalos a los ids reales de la semilla
+# (id 1 = PORT-001 con préstamo vencido de est.luis, id 2 = PORT-002, id 9 = INST-001 solo docentes)
+# y a fechas futuras.
+
+@host = http://localhost:8000/api
+@password = {{$dotenv SEED_PASSWORD}}
+
+###############################################################################
+# Autenticación (tokens por rol)
+###############################################################################
+
+### Login SOLICITANTE (est.ana)
+# @name loginAna
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "username": "est.ana", "password": "{{password}}" }
+
+### Login SOLICITANTE (est.luis, con préstamo vencido)
+# @name loginLuis
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "username": "est.luis", "password": "{{password}}" }
+
+### Login SOLICITANTE docente (doc.maria)
+# @name loginMaria
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "username": "doc.maria", "password": "{{password}}" }
+
+### Login RESPONSABLE (resp.carlos)
+# @name loginCarlos
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "username": "resp.carlos", "password": "{{password}}" }
+
+### Login COORDINACION (coord.sofia)
+# @name loginSofia
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "username": "coord.sofia", "password": "{{password}}" }
+
+### Login con clave incorrecta -> 401 INVALID_CREDENTIALS
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "username": "est.ana", "password": "incorrecta" }
+
+@tokenAna = {{loginAna.response.body.$.access_token}}
+@tokenLuis = {{loginLuis.response.body.$.access_token}}
+@tokenMaria = {{loginMaria.response.body.$.access_token}}
+@tokenCarlos = {{loginCarlos.response.body.$.access_token}}
+@tokenSofia = {{loginSofia.response.body.$.access_token}}
+
+### Usuario autenticado
+GET {{host}}/auth/me
+Authorization: Bearer {{tokenAna}}
+
+### Sin token -> 401 NOT_AUTHENTICATED
+GET {{host}}/auth/me
+
+###############################################################################
+# PF-01 — Catálogo y disponibilidad (CA-01)
+###############################################################################
+
+### Categorías
+GET {{host}}/categories
+Authorization: Bearer {{tokenAna}}
+
+### Catálogo sin rango (available = null)
+GET {{host}}/resources
+Authorization: Bearer {{tokenAna}}
+
+### Portátiles disponibles mañana (ajustar fechas)
+GET {{host}}/resources?category_id=1&from=2026-11-20T08:00:00-05:00&to=2026-11-20T12:00:00-05:00&available_only=true
+Authorization: Bearer {{tokenAna}}
+
+### Búsqueda por texto
+GET {{host}}/resources?q=PORT
+Authorization: Bearer {{tokenAna}}
+
+### Detalle con periodos ocupados
+GET {{host}}/resources/1
+Authorization: Bearer {{tokenAna}}
+
+### Rango incompleto -> 422 VALIDATION_ERROR
+GET {{host}}/resources?from=2026-11-20T08:00:00-05:00
+Authorization: Bearer {{tokenAna}}
+
+###############################################################################
+# PF-02 — Recurso inexistente (CA-01)
+###############################################################################
+
+### -> 404 NOT_FOUND
+GET {{host}}/resources/99999
+Authorization: Bearer {{tokenAna}}
+
+###############################################################################
+# PF-03 — Solicitud válida (CA-02)
+###############################################################################
+
+### Crear solicitud -> 201 PENDIENTE (ajustar fechas a futuro)
+# @name crearSolicitud
+POST {{host}}/loans
+Authorization: Bearer {{tokenAna}}
+Content-Type: application/json
+
+{
+  "resource_id": 2,
+  "start_at": "2026-11-20T08:00:00-05:00",
+  "end_at": "2026-11-20T12:00:00-05:00",
+  "purpose": "Práctica de laboratorio de redes"
+}
+
+@loanId = {{crearSolicitud.response.body.$.id}}
+
+### Recuperar la solicitud creada
+GET {{host}}/loans/{{loanId}}
+Authorization: Bearer {{tokenAna}}
+
+### Mis solicitudes
+GET {{host}}/loans?page=1&size=10
+Authorization: Bearer {{tokenAna}}
+
+### Historial de movimientos (null -> PENDIENTE)
+GET {{host}}/loans/{{loanId}}/movements
+Authorization: Bearer {{tokenAna}}
+
+###############################################################################
+# PF-04 — Solicitudes inválidas (CA-02): ninguna debe persistirse
+###############################################################################
+
+### Fin anterior al inicio -> 422 (campo end_at)
+POST {{host}}/loans
+Authorization: Bearer {{tokenAna}}
+Content-Type: application/json
+
+{ "resource_id": 2, "start_at": "2026-11-20T12:00:00-05:00", "end_at": "2026-11-20T08:00:00-05:00", "purpose": "Práctica de laboratorio de redes" }
+
+### Propósito demasiado corto -> 422 (campo purpose)
+POST {{host}}/loans
+Authorization: Bearer {{tokenAna}}
+Content-Type: application/json
+
+{ "resource_id": 2, "start_at": "2026-11-20T08:00:00-05:00", "end_at": "2026-11-20T12:00:00-05:00", "purpose": "corto" }
+
+### Inicio en el pasado -> 422
+POST {{host}}/loans
+Authorization: Bearer {{tokenAna}}
+Content-Type: application/json
+
+{ "resource_id": 2, "start_at": "2020-01-01T08:00:00-05:00", "end_at": "2020-01-01T12:00:00-05:00", "purpose": "Práctica de laboratorio de redes" }
+
+### Estudiante pide recurso solo docentes (INST-001) -> 403 TEACHER_ONLY
+POST {{host}}/loans
+Authorization: Bearer {{tokenAna}}
+Content-Type: application/json
+
+{ "resource_id": 9, "start_at": "2026-11-20T08:00:00-05:00", "end_at": "2026-11-20T12:00:00-05:00", "purpose": "Medición en laboratorio" }
+
+### Solicitante con préstamo vencido (est.luis) -> 409 OVERDUE_BLOCK
+POST {{host}}/loans
+Authorization: Bearer {{tokenLuis}}
+Content-Type: application/json
+
+{ "resource_id": 2, "start_at": "2026-11-21T08:00:00-05:00", "end_at": "2026-11-21T12:00:00-05:00", "purpose": "Práctica de laboratorio de redes" }
+
+### Responsable intenta crear solicitud -> 403 FORBIDDEN
+POST {{host}}/loans
+Authorization: Bearer {{tokenCarlos}}
+Content-Type: application/json
+
+{ "resource_id": 2, "start_at": "2026-11-20T08:00:00-05:00", "end_at": "2026-11-20T12:00:00-05:00", "purpose": "Práctica de laboratorio de redes" }
+
+### Cancelar la propia solicitud -> 200 CANCELADA
+POST {{host}}/loans/{{loanId}}/cancel
+Authorization: Bearer {{tokenAna}}
+Content-Type: application/json
+
+{ "note": "Ya no la necesito" }
+
+### Cancelar de nuevo -> 409 INVALID_TRANSITION
+POST {{host}}/loans/{{loanId}}/cancel
+Authorization: Bearer {{tokenAna}}
+Content-Type: application/json
+
+{}
+
+###############################################################################
+# PF-11 — Consulta consolidada (CA-06)
+###############################################################################
+
+### Resumen (coordinación)
+GET {{host}}/dashboard/summary
+Authorization: Bearer {{tokenSofia}}
+
+### Uso por categoría y recurso (últimos 30 días)
+GET {{host}}/dashboard/usage
+Authorization: Bearer {{tokenSofia}}
+
+### Historial filtrado: vencidos
+GET {{host}}/loans?status=VENCIDA
+Authorization: Bearer {{tokenSofia}}
+
+### Historial filtrado por rango y categoría
+GET {{host}}/loans?category_id=1&from=2026-11-01T00:00:00-05:00&to=2026-11-30T23:59:59-05:00
+Authorization: Bearer {{tokenSofia}}
+
+### Solicitante no accede al tablero -> 403 FORBIDDEN
+GET {{host}}/dashboard/summary
+Authorization: Bearer {{tokenAna}}
+
+###############################################################################
+# PF-13 / PF-14 — Administración de recursos (US7)
+###############################################################################
+
+### Crear recurso -> 201
+POST {{host}}/resources
+Authorization: Bearer {{tokenCarlos}}
+Content-Type: application/json
+
+{ "code": "PORT-005", "name": "Portátil Lenovo T14", "description": "Equipo nuevo", "category_id": 1, "teacher_only": false }
+
+### Código duplicado -> 409 DUPLICATE_CODE
+POST {{host}}/resources
+Authorization: Bearer {{tokenCarlos}}
+Content-Type: application/json
+
+{ "code": "PORT-005", "name": "Otro", "category_id": 1 }
+
+### Código con formato inválido -> 422
+POST {{host}}/resources
+Authorization: Bearer {{tokenCarlos}}
+Content-Type: application/json
+
+{ "code": "port-5", "name": "Otro", "category_id": 1 }
+
+### Solicitante intenta crear -> 403 FORBIDDEN
+POST {{host}}/resources
+Authorization: Bearer {{tokenAna}}
+Content-Type: application/json
+
+{ "code": "PORT-006", "name": "No permitido", "category_id": 1 }
+
+### Editar datos
+PATCH {{host}}/resources/1
+Authorization: Bearer {{tokenCarlos}}
+Content-Type: application/json
+
+{ "description": "Portátil de laboratorio de redes" }
+
+### Pasar a EN_REVISION un recurso con préstamo ACTIVO (PORT-001 vencido) -> 409 RESOURCE_IN_USE
+PATCH {{host}}/resources/1
+Authorization: Bearer {{tokenCarlos}}
+Content-Type: application/json
+
+{ "status": "EN_REVISION" }
