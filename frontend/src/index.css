@@ -287,7 +287,8 @@ code {
   max-width: 1160px;
   margin: 0 auto;
   padding: clamp(1.1rem, 3vw, 2rem) clamp(1rem, 3vw, 2rem) 4rem;
-  animation: rise 0.35s var(--ease) both;
+  /* `backwards` (no `both`): al terminar no deja transform activo, que atraparía a los overlays fixed */
+  animation: rise 0.35s var(--ease) backwards;
 }
 
 @keyframes rise {
@@ -1390,4 +1391,12 @@ form.card .actions {
 
 .auth-hero h1 + p {
   margin-top: 1rem;
+}
+
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background: var(--surface-2);
+  color: var(--text-soft);
+  cursor: not-allowed;
 }

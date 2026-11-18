@@ -180,6 +180,7 @@ export default function ReviewInboxPage() {
           title={`Rechazar solicitud #${rejecting.id}`}
           message="El motivo es obligatorio y lo verá el solicitante."
           confirmLabel="Rechazar"
+          danger
           textLabel="Motivo del rechazo"
           textRequired
           minLength={5}
