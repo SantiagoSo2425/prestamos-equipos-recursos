@@ -4,9 +4,6 @@ Aplicación web cliente-servidor para gestionar el ciclo completo de préstamo d
 catálogo y disponibilidad → solicitud → evaluación → entrega → devolución → historial y tablero de
 coordinación. Proyecto final (PF-03).
 
-> Borrador mantenido por Persona A. Las secciones 4 y 6 las completa Persona B por PR propio, y los
-> enlaces a PR y evidencias se actualizan al cierre.
-
 ## 1. Información general
 
 | Integrante | Rol en el proyecto | Aportes |
@@ -33,11 +30,13 @@ recurso hasta su devolución.
 ## 3. Requisitos
 
 Especificación completa en [`specs/001-prestamos-equipos/spec.md`](specs/001-prestamos-equipos/spec.md)
-y análisis de requisitos en `docs/requisitos.md` (pendiente, Persona B).
+y análisis de requisitos en [`docs/requisitos.md`](docs/requisitos.md) (RF-01…RF-38, RNF, historias y
+supuestos sin confirmar).
 
 ## 4. Arquitectura
 
-_Sección de Persona B (`docs/diseno.md`)._ Resumen: SPA React (Vite + TypeScript, React Router,
+Detalle (diagramas, modelo de datos, máquina de estados y permisos) en [`docs/diseno.md`](docs/diseno.md).
+Resumen: SPA React (Vite + TypeScript, React Router,
 TanStack Query) que consume una API REST FastAPI (capas `api → services → models`) sobre PostgreSQL 16.
 La incompatibilidad de asignaciones se garantiza con bloqueo de filas y una restricción de exclusión
 de rangos (`btree_gist`). Contrato en [`contracts/api.md`](specs/001-prestamos-equipos/contracts/api.md).
@@ -69,7 +68,8 @@ interactiva de la API queda en `http://localhost:8000/docs`.
 
 ## 6. Endpoints
 
-_La tabla se contrasta con `/docs` al cierre (Persona B aporta esta sección)._
+Tabla contrastada con el OpenAPI generado por la aplicación (`/docs`, `/openapi.json`); además existe
+`GET /api/health` para comprobar que el servicio está activo.
 
 | Método | Ruta | Roles | Descripción |
 |---|---|---|---|
@@ -98,16 +98,36 @@ Errores con formato uniforme `{ "detail", "code", "fields"? }` (401, 403, 404, 4
 
 Pruebas funcionales documentadas PF-01…PF-14 en [`docs/pruebas.md`](docs/pruebas.md), peticiones
 reproducibles en [`docs/pruebas/prestamos.http`](docs/pruebas/prestamos.http) y evidencias en
-`evidencias/PF-XX/`. Trazabilidad criterio → requisito → código → PR → prueba en
+`evidencias/PF-XX/`. Scripts reproducibles contra la BD real: `backend/scripts/verify_a.py` (PF-01…04, 11,
+13, 14 y ciclo completo) y `backend/scripts/smoke_flow.py` (PF-05…10); matriz de permisos con
+`python -m pytest tests/test_permissions.py`. Trazabilidad criterio → requisito → código → PR → prueba en
 [`docs/trazabilidad.md`](docs/trazabilidad.md).
 
 ## 8. Control de versiones
 
 Ramas por unidad de trabajo (`feat/...`) integradas a `develop` mediante pull request con revisión
 del otro integrante; `main` recibe solo versiones estables. Commits en español con estilo
-Conventional Commits y referencia al requisito. Enlaces a los PR: se completan al cierre.
+Conventional Commits y referencia al requisito. Pull requests: [#1](https://github.com/SantiagoSo2425/prestamos-equipos-recursos/pull/1)
+(spec y plan), [#2](https://github.com/SantiagoSo2425/prestamos-equipos-recursos/pull/2) (autenticación),
+[#3](https://github.com/SantiagoSo2425/prestamos-equipos-recursos/pull/3) (catálogo, solicitudes, recursos y
+tablero) y [#4](https://github.com/SantiagoSo2425/prestamos-equipos-recursos/pull/4) (datos, reglas y flujo
+aprobar/entregar/devolver).
 
 ## 9. Conclusiones y limitaciones
 
-_Se redactan al cierre del proyecto._ Supuestos pendientes de confirmar con el cliente: duración máxima
-por categoría (72/48/24/72 h) y límites de 2 (estudiante) y 5 (docente) préstamos simultáneos.
+**Conclusiones.** El sistema cubre el ciclo completo de préstamo (CA-01…CA-06) con las reglas aplicadas en
+el servidor y respaldadas por la base de datos: una restricción de exclusión de rangos en PostgreSQL impide
+asignaciones solapadas incluso con aprobaciones simultáneas. Las pruebas PF-01…PF-14 se ejecutaron contra
+PostgreSQL con la semilla, y el rendimiento con 200+ recursos y 2.000+ operaciones cumple SC-008 (ver
+`evidencias/SC-008-rendimiento.txt`).
+
+**Limitaciones.**
+
+- Los supuestos de negocio (duración máxima por categoría y límites de 2 estudiante / 5 docente) están
+  pendientes de validación con el docente; ver `docs/requisitos.md`.
+- No hay gestión de usuarios desde la interfaz (se cargan con la semilla), recuperación de contraseña,
+  notificaciones ni integración con inventarios externos.
+- El estado «vencido» se calcula al consultar; no hay procesos programados ni avisos automáticos.
+- Las pruebas funcionales se ejecutan con scripts y `pytest` contra la BD real, pero no hay una suite
+  automatizada completa (reglas de concurrencia, T089) ni integración continua.
+- Una solicitud corresponde a una sola unidad de recurso.
