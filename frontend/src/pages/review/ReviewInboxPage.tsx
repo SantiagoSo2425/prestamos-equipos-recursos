@@ -6,7 +6,10 @@ import type { EffectiveStatus, Loan, Page, ResourceDetail } from '../../api/type
 import ConfirmDialog from '../../components/ConfirmDialog'
 import DataTable, { type Column } from '../../components/DataTable'
 import ErrorAlert from '../../components/ErrorAlert'
+import PageHeader from '../../components/PageHeader'
+import { TableSkeleton } from '../../components/Skeleton'
 import StatusBadge from '../../components/StatusBadge'
+import { useToast } from '../../components/toast-context'
 import DeliverForm from '../loans/DeliverForm'
 import ReturnForm from '../loans/ReturnForm'
 import { formatDateTime } from '../../utils/format'
@@ -66,16 +69,21 @@ export default function ReviewInboxPage() {
     },
   })
 
+  const toast = useToast()
   const refresh = () => qc.invalidateQueries({ queryKey: ['loans'] })
   const approve = useMutation({
     mutationFn: (id: number) => apiFetch<Loan>(`/loans/${id}/approve`, { method: 'POST', body: {} }),
-    onSuccess: refresh,
+    onSuccess: () => {
+      toast.success('Solicitud aprobada.')
+      refresh()
+    },
   })
   const reject = useMutation({
     mutationFn: ({ id, reason }: { id: number; reason: string }) =>
       apiFetch<Loan>(`/loans/${id}/reject`, { method: 'POST', body: { reason } }),
     onSuccess: () => {
       setRejecting(null)
+      toast.success('Solicitud rechazada.')
       refresh()
     },
   })
@@ -130,7 +138,10 @@ export default function ReviewInboxPage() {
 
   return (
     <section>
-      <h1>Gestión de solicitudes</h1>
+      <PageHeader
+        title="Gestión de solicitudes"
+        subtitle="Evalúa las solicitudes pendientes, entrega los equipos aprobados y registra las devoluciones."
+      />
       <div className="tabs" role="tablist">
         {TABS.map((t) => (
           <button
@@ -149,7 +160,7 @@ export default function ReviewInboxPage() {
       </div>
 
       <ErrorAlert error={approve.error} />
-      {query.isLoading && <p>Cargando…</p>}
+      {query.isLoading && <TableSkeleton />}
       <ErrorAlert error={query.error} />
       {query.data && (
         <DataTable
@@ -169,6 +180,7 @@ export default function ReviewInboxPage() {
           title={`Rechazar solicitud #${rejecting.id}`}
           message="El motivo es obligatorio y lo verá el solicitante."
           confirmLabel="Rechazar"
+          danger
           textLabel="Motivo del rechazo"
           textRequired
           minLength={5}
@@ -183,7 +195,10 @@ export default function ReviewInboxPage() {
           <div className="dialog">
             <DeliverForm
               loanId={delivering.id}
-              onDone={() => setDelivering(null)}
+              onDone={() => {
+                setDelivering(null)
+                toast.success('Entrega registrada.')
+              }}
               onCancel={() => setDelivering(null)}
             />
           </div>
@@ -194,7 +209,10 @@ export default function ReviewInboxPage() {
           <div className="dialog">
             <ReturnForm
               loanId={returning.id}
-              onDone={() => setReturning(null)}
+              onDone={() => {
+                setReturning(null)
+                toast.success('Devolución registrada.')
+              }}
               onCancel={() => setReturning(null)}
             />
           </div>

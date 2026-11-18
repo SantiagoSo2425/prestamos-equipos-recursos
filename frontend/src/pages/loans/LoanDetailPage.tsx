@@ -6,7 +6,9 @@ import type { Loan } from '../../api/types'
 import { useAuth } from '../../auth/AuthContext'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import ErrorAlert from '../../components/ErrorAlert'
+import PageHeader from '../../components/PageHeader'
 import StatusBadge from '../../components/StatusBadge'
+import { useToast } from '../../components/toast-context'
 import { formatDateTime } from '../../utils/format'
 import DeliverForm from './DeliverForm'
 import MovementTimeline from './MovementTimeline'
@@ -20,6 +22,7 @@ export default function LoanDetailPage() {
   const { hasRole } = useAuth()
   const isManager = hasRole('RESPONSABLE')
   const qc = useQueryClient()
+  const toast = useToast()
   const [mode, setMode] = useState<Mode>(null)
 
   const query = useQuery({
@@ -35,13 +38,17 @@ export default function LoanDetailPage() {
 
   const approve = useMutation({
     mutationFn: () => apiFetch<Loan>(`/loans/${loanId}/approve`, { method: 'POST', body: {} }),
-    onSuccess: refresh,
+    onSuccess: () => {
+      toast.success('Solicitud aprobada.')
+      refresh()
+    },
   })
   const reject = useMutation({
     mutationFn: (reason: string) =>
       apiFetch<Loan>(`/loans/${loanId}/reject`, { method: 'POST', body: { reason } }),
     onSuccess: () => {
       setMode(null)
+      toast.success('Solicitud rechazada.')
       refresh()
     },
   })
@@ -60,14 +67,18 @@ export default function LoanDetailPage() {
   const loan = query.data!
   const done = () => {
     setMode(null)
+    toast.success('Operación registrada.')
     refresh()
   }
 
   return (
     <section>
-      <h1>
-        Operación #{loan.id} <StatusBadge status={loan.effective_status} />
-      </h1>
+      <PageHeader
+        back={{ to: '/', label: 'Volver' }}
+        title={`Operación #${loan.id}`}
+        subtitle={`${loan.resource.name} · ${loan.requester.full_name}`}
+        actions={<StatusBadge status={loan.effective_status} />}
+      />
 
       {loan.effective_status === 'VENCIDA' && (
         <div className="alert alert-error" role="alert">
@@ -154,6 +165,7 @@ export default function LoanDetailPage() {
           title="Rechazar solicitud"
           message="Indica el motivo; el solicitante podrá verlo."
           confirmLabel="Rechazar"
+          danger
           textLabel="Motivo del rechazo"
           textRequired
           minLength={5}

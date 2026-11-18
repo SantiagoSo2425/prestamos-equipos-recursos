@@ -1,18 +1,18 @@
 import { statusLabel } from './status'
 
-const CLASS: Record<string, string> = {
-  ACTIVO: 'ok',
-  DEVUELTA: 'ok',
-  APROBADA: 'info',
-  ACTIVA: 'info',
-  PENDIENTE: 'warn',
-  EN_REVISION: 'warn',
-  VENCIDA: 'bad',
-  RECHAZADA: 'bad',
-  CANCELADA: '',
-  DADO_DE_BAJA: 'bad',
+const TONE: Record<string, string> = {
+  ACTIVO: 'badge-ok',
+  DEVUELTA: 'badge-muted',
+  APROBADA: 'badge-info',
+  ACTIVA: 'badge-ok',
+  PENDIENTE: 'badge-warn',
+  EN_REVISION: 'badge-warn',
+  VENCIDA: 'badge-bad',
+  RECHAZADA: 'badge-bad',
+  CANCELADA: 'badge-muted',
+  DADO_DE_BAJA: 'badge-muted',
 }
 
 export default function StatusTag({ status }: { status: string }) {
-  return <span className={`tag ${CLASS[status] ?? ''}`}>{statusLabel(status)}</span>
+  return <span className={`badge ${TONE[status] ?? 'badge-muted'}`}>{statusLabel(status)}</span>
 }

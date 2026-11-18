@@ -3,17 +3,24 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from '../../api/client'
 import type { Loan, ResourceDetail } from '../../api/types'
-import { formatDateTime, localInputToIso } from '../../utils/datetime'
+import EmptyState from '../../components/EmptyState'
+import Icon from '../../components/Icon'
+import PageHeader from '../../components/PageHeader'
+import { Skeleton } from '../../components/Skeleton'
+import { useToast } from '../../components/toast-context'
+import { formatDateTime, localInputToIso, toLocalInput } from '../../utils/datetime'
 import ApiErrorMessage from '../common/ApiErrorMessage'
 import { fieldError } from '../common/errors'
 
 const MIN_PURPOSE = 10
 const MAX_PURPOSE = 500
+const DURATIONS = [1, 2, 4, 8, 24]
 
 export default function NewRequestPage() {
   const [params] = useSearchParams()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const toast = useToast()
   const resourceId = params.get('recurso')
 
   const [start, setStart] = useState(params.get('from') ?? '')
@@ -34,9 +41,27 @@ export default function NewRequestPage() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['loans'] })
       void queryClient.invalidateQueries({ queryKey: ['resources'] })
+      toast.success('Solicitud enviada. Te avisaremos cuando sea evaluada.')
       navigate('/mis-solicitudes')
     },
   })
+
+  /** Quita el error de un campo en cuanto el usuario lo corrige. */
+  const clearError = (field: string) =>
+    setErrors((e) => {
+      if (!(field in e)) return e
+      const { [field]: _removed, ...rest } = e
+      return rest
+    })
+
+  function setDuration(hours: number) {
+    if (!start) {
+      setErrors((e) => ({ ...e, start_at: 'Primero indica la fecha y hora de inicio.' }))
+      return
+    }
+    setEnd(toLocalInput(new Date(new Date(start).getTime() + hours * 3_600_000)))
+    clearError('end_at')
+  }
 
   function validate(maxHours: number | undefined): Record<string, string> {
     const e: Record<string, string> = {}
@@ -70,87 +95,140 @@ export default function NewRequestPage() {
 
   if (!resourceId) {
     return (
-      <main>
-        <h1>Nueva solicitud</h1>
-        <p className="alert info">
-          Elige primero un recurso en el <Link to="/catalogo">catálogo</Link>.
-        </p>
-      </main>
+      <section>
+        <PageHeader title="Nueva solicitud" />
+        <EmptyState
+          icon="catalog"
+          title="Elige primero un recurso"
+          action={
+            <Link className="btn" to="/catalogo">
+              Ir al catálogo
+            </Link>
+          }
+        >
+          Desde el catálogo puedes ver qué está disponible y pulsar «Solicitar».
+        </EmptyState>
+      </section>
     )
   }
-  if (resource.isLoading) return <main>Cargando recurso…</main>
+
+  if (resource.isLoading)
+    return (
+      <section role="status" aria-label="Cargando">
+        <Skeleton width="40%" height={30} />
+        <div style={{ height: 24 }} />
+        <Skeleton height={260} />
+      </section>
+    )
+
   if (resource.isError) {
     return (
-      <main>
-        <h1>Nueva solicitud</h1>
+      <section>
+        <PageHeader title="Nueva solicitud" back={{ to: '/catalogo', label: 'Volver al catálogo' }} />
         <ApiErrorMessage error={resource.error} />
-        <Link to="/catalogo">Volver al catálogo</Link>
-      </main>
+      </section>
     )
   }
 
   const r = resource.data!
   const shown = (field: string) => errors[field] ?? fieldError(create.error, field)
+  const len = purpose.trim().length
 
   return (
-    <main>
-      <h1>Nueva solicitud</h1>
-      <p>
-        <strong>
-          {r.code} · {r.name}
-        </strong>{' '}
-        <span className="muted">
-          ({r.category.name}, máximo {r.category.max_loan_hours} h)
-        </span>
-      </p>
-      {r.busy_periods.length > 0 && (
-        <details>
-          <summary>Periodos ocupados ({r.busy_periods.length})</summary>
-          <ul>
-            {r.busy_periods.map((b) => (
-              <li key={b.loan_id}>
-                {formatDateTime(b.start_at)} → {b.end_at ? formatDateTime(b.end_at) : 'hasta su devolución'}
-              </li>
-            ))}
-          </ul>
-        </details>
-      )}
+    <section>
+      <PageHeader
+        back={{ to: '/catalogo', label: 'Catálogo' }}
+        title="Nueva solicitud"
+        subtitle="Indica cuándo necesitas el recurso y para qué lo usarás."
+      />
 
-      <form className="form" onSubmit={onSubmit} noValidate>
-        <label>
-          Inicio
-          <input type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)} />
-          {shown('start_at') && <span className="field-error">{shown('start_at')}</span>}
-        </label>
-        <label>
-          Fin
-          <input type="datetime-local" value={end} onChange={(e) => setEnd(e.target.value)} />
-          {shown('end_at') && <span className="field-error">{shown('end_at')}</span>}
-        </label>
+      <div className="card">
+        <div className="row">
+          <div>
+            <strong>{r.name}</strong>
+            <div className="muted">
+              {r.code} · {r.category.name} · máximo {r.category.max_loan_hours} h por préstamo
+            </div>
+          </div>
+        </div>
+        {r.busy_periods.length > 0 && (
+          <details style={{ marginTop: '0.8rem' }}>
+            <summary className="muted">Ver periodos ocupados ({r.busy_periods.length})</summary>
+            <ul>
+              {r.busy_periods.map((b) => (
+                <li key={b.loan_id}>
+                  {formatDateTime(b.start_at)} → {b.end_at ? formatDateTime(b.end_at) : 'hasta su devolución'}
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
+      </div>
+
+      <form className="card form" onSubmit={onSubmit} noValidate>
+        <div className="filters" style={{ border: 'none', padding: 0, boxShadow: 'none', margin: 0, background: 'none' }}>
+          <label>
+            Inicio
+            <input type="datetime-local" value={start} onChange={(e) => {
+                setStart(e.target.value)
+                clearError('start_at')
+              }}
+            />
+            {shown('start_at') && <span className="field-error">{shown('start_at')}</span>}
+          </label>
+          <label>
+            Fin
+            <input type="datetime-local" value={end} onChange={(e) => {
+                setEnd(e.target.value)
+                clearError('end_at')
+              }}
+            />
+            {shown('end_at') && <span className="field-error">{shown('end_at')}</span>}
+          </label>
+        </div>
+
+        <div>
+          <span className="muted" style={{ fontSize: '0.84rem' }}>
+            Duración rápida:
+          </span>
+          <div className="chips" style={{ marginTop: '0.35rem' }}>
+            {DURATIONS.filter((h) => h <= r.category.max_loan_hours).map((h) => (
+              <button type="button" key={h} className="chip" onClick={() => setDuration(h)}>
+                <Icon name="clock" size={13} /> {h} h
+              </button>
+            ))}
+          </div>
+        </div>
+
         <label>
           Propósito
           <textarea
             value={purpose}
             maxLength={MAX_PURPOSE + 50}
-            onChange={(e) => setPurpose(e.target.value)}
+            placeholder="Ej.: Práctica de laboratorio de redes con el grupo 3"
+            onChange={(e) => {
+              setPurpose(e.target.value)
+              clearError('purpose')
+            }}
           />
-          <span className="counter">
-            {purpose.trim().length}/{MAX_PURPOSE} (mínimo {MIN_PURPOSE})
+          <span className="counter" style={{ color: len > MAX_PURPOSE ? 'var(--bad)' : undefined }}>
+            {len}/{MAX_PURPOSE} · mínimo {MIN_PURPOSE} caracteres
           </span>
           {shown('purpose') && <span className="field-error">{shown('purpose')}</span>}
         </label>
 
         {create.isError && <ApiErrorMessage error={create.error} />}
 
-        <div className="actions">
-          <button type="submit" disabled={create.isPending}>
-            {create.isPending ? 'Enviando…' : 'Enviar solicitud'}
-          </button>
-          <Link className="btn secondary" to="/catalogo">
+        <div className="actions" style={{ justifyContent: 'flex-end' }}>
+          <Link className="btn ghost" to="/catalogo">
             Cancelar
           </Link>
+          <button type="submit" className="primary" disabled={create.isPending}>
+            {create.isPending && <span className="spinner" />}
+            {create.isPending ? 'Enviando…' : 'Enviar solicitud'}
+          </button>
         </div>
       </form>
-    </main>
+    </section>
   )
 }
