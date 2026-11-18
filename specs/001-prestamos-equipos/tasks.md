@@ -32,8 +32,8 @@ cada historia. Las pruebas automatizadas son **opcionales** y están en la fase 
 
 | Persona | Fases | Historias | Pruebas PF |
 |---|---|---|---|
-| A (Santiago) | F1A auth/esqueleto | US1, US7, US2, US6 | PF-01, 02, 03, 04, 11 |
-| B | F1B datos/layout | US3, US4, US5 | PF-05, 06, 07, 08, 09, 10 |
+| A (Santiago) | F1A auth/esqueleto + `LoanOut`/lectura de préstamos | US1, US2, US7, US6 | PF-01, 02, 03, 04, 11 |
+| B | F1B datos/layout (PR base temprano) | US3, US4, US5 | PF-05, 06, 07, 08, 09, 10 |
 | AB | F0 acuerdo, integración | — | PF-12 |
 
 ---
@@ -49,7 +49,7 @@ cada historia. Las pruebas automatizadas son **opcionales** y están en la fase 
 - [ ] T003 [P] [B] Crear plantilla de PR en `.github/pull_request_template.md` con secciones: Propósito, Cambios, Requisitos (RF/CA), Pruebas efectuadas (PF-XX + evidencia), Checklist de constitución (reglas en servidor, permisos por rol, sin secretos, trazabilidad actualizada)
 - [ ] T004 [P] [A] Crear estructura de carpetas raíz `backend/`, `frontend/`, `docs/`, `docs/pruebas/`, `evidencias/` (con `.gitkeep`) según plan.md
 - [ ] T005 [AB] Revisar y aprobar en el PR de F0 el contrato `specs/001-prestamos-equipos/contracts/api.md` y las firmas de "Contratos internos entre personas" de `plan.md` (cada uno deja comentario de aprobación)
-- [ ] T006 [A] Redactar `docs/requisitos.md` (Act. 2): registro de entrevista (preguntas, respuestas, acuerdos, pendientes), actores, RF-01…RF-38 (equivalencia `FR-0NN`→`RF-NN` de spec.md), RNF (seguridad, rendimiento SC-008, usabilidad), historias US1–US7 con criterios de aceptación, priorización y supuestos sin confirmar (duraciones por categoría, límites 2/5)
+- [ ] T006 [B] Redactar `docs/requisitos.md` (Act. 2): registro de entrevista (preguntas, respuestas, acuerdos, pendientes), actores, RF-01…RF-38 (equivalencia `FR-0NN`→`RF-NN` de spec.md), RNF (seguridad, rendimiento SC-008, usabilidad), historias US1–US7 con criterios de aceptación, priorización y supuestos sin confirmar (duraciones por categoría, límites 2/5)
 - [ ] T007 [AB] Merge del PR F0 a `main` tras revisión cruzada
 
 **🔄 SYNC-0**: contrato aprobado y `main` con spec/plan. Ambos crean sus ramas de fundación desde `main`.
@@ -76,9 +76,12 @@ cada historia. Las pruebas automatizadas son **opcionales** y están en la fase 
 - [ ] T019 [A] Crear `frontend/src/api/types.ts` con todos los tipos de "Esquemas compartidos" de `contracts/api.md` (Role, LoanStatus, EffectiveStatus, Resource, ResourceDetail, Loan, Movement, Page…)
 - [ ] T020 [A] Implementar `frontend/src/auth/AuthContext.tsx` (`useAuth()`: user, login, logout, hasRole) y `frontend/src/auth/ProtectedRoute.tsx` (redirige a `/login` sin sesión; muestra "No autorizado" si el rol no aplica)
 - [ ] T021 [A] Implementar `frontend/src/auth/LoginPage.tsx` con validación de campos vacíos, mensaje de error del API y redirección según rol (SOLICITANTE→`/catalogo`, RESPONSABLE→`/gestion`, COORDINACION→`/tablero`)
-- [ ] T022 [A] Abrir PR `feat/f1a-auth` (Revisor: B) con evidencia de login exitoso/fallido en `/docs`
+- [ ] T091 [A] Crear `backend/app/schemas/loan.py` sección A con `LoanOut` completo según contrato (incluye `effective_status`, `days_overdue`, refs de usuarios) y `LoanFilters`; **adelantado a F1A** porque B lo necesita desde US3
+- [ ] T092 [A] Implementar en `backend/app/services/loans.py` `list_loans` (SOLICITANTE solo propias; filtros `status` incl. `VENCIDA`, `resource_id`, `category_id`, `requester_id` solo R/C, `from`/`to`, paginación, `sort=-created_at`) y `get_loan` (404 si no existe o es ajena para SOLICITANTE); **adelantado a F1A**
+- [ ] T093 [A] Implementar en `backend/app/api/loans.py` `GET /api/loans` y `GET /api/loans/{id}`; **adelantado a F1A** (B los usa en la bandeja `/gestion` y en `LoanDetailPage`)
+- [ ] T022 [A] Abrir PR `feat/f1a-auth` (Revisor: B) con evidencia de login exitoso/fallido en `/docs` (la evidencia requiere el PR base de B, ver T094)
 
-### F1B — Datos, reglas compartidas y layout (Persona B) · Rama `feat/f1b-datos`
+### F1B — Datos, reglas compartidas y layout (Persona B) · Ramas `feat/f1b-base` (primero) y `feat/f1b-datos`
 
 - [ ] T023 [B] Implementar `backend/app/database.py`: engine desde `DATABASE_URL`, `SessionLocal`, `Base` (DeclarativeBase) y dependencia `get_db` con commit/rollback
 - [ ] T024 [P] [B] Crear enums en `backend/app/models/enums.py`: `UserRole(SOLICITANTE, RESPONSABLE, COORDINACION)`, `RequesterType(ESTUDIANTE, DOCENTE)`, `ResourceStatus(ACTIVO, EN_REVISION, DADO_DE_BAJA)`, `LoanStatus(PENDIENTE, APROBADA, RECHAZADA, CANCELADA, ACTIVA, DEVUELTA)`, `ItemCondition(BUENO, CON_DANO)`
@@ -94,6 +97,7 @@ cada historia. Las pruebas automatizadas son **opcionales** y están en la fase 
 - [ ] T034 [P] [B] Implementar `frontend/src/App.tsx` y `frontend/src/main.tsx`: `QueryClientProvider`, `AuthProvider`, rutas `/login`, `/catalogo`, `/catalogo/:id`, `/recursos/nuevo`, `/recursos/:id/editar`, `/solicitudes/nueva`, `/mis-solicitudes`, `/gestion`, `/prestamos/:id`, `/tablero`, `/historial` envueltas en `ProtectedRoute` con roles (páginas placeholder hasta cada historia)
 - [ ] T035 [P] [B] Implementar `frontend/src/components/Layout.tsx` + `NavBar.tsx` con menú por rol (S: Catálogo, Mis solicitudes; R: Catálogo, Gestión, Recursos, Tablero; C: Tablero, Historial) y usuario/cerrar sesión
 - [ ] T036 [P] [B] Implementar componentes compartidos en `frontend/src/components/`: `StatusBadge.tsx` (colores por `EffectiveStatus`/`ResourceStatus`), `ErrorAlert.tsx` (muestra `ApiError.detail` y `fields`), `DataTable.tsx` (paginación), `DateTimeField.tsx`, `ConfirmDialog.tsx` (con campo de texto opcional/obligatorio), y `frontend/src/utils/format.ts` (fechas en `America/Bogota`); estilos base en `frontend/src/styles.css`
+- [ ] T094 [B] **Primero**: abrir un PR corto `feat/f1b-base` (Revisor: A) con T023–T029 y la semilla mínima de usuarios de T033, para que A pueda probar login y `deps.py` (T013, T015, T022); el resto de F1B (T030–T036) sigue en `feat/f1b-datos`
 - [ ] T037 [B] Abrir PR `feat/f1b-datos` (Revisor: A) con evidencia de `alembic upgrade head` + `seed` y captura de la restricción `loans_no_overlap` en la BD
 
 **🔄 SYNC-1**: PR F1A y F1B mergeados. Desde aquí A y B trabajan en paralelo por historias.
@@ -123,17 +127,19 @@ cada historia. Las pruebas automatizadas son **opcionales** y están en la fase 
 ## Phase 4: User Story 2 — Registrar solicitud (P1) · CA-02
 
 **Owner**: A · **Rama**: `feat/us2-solicitudes` · **Revisor**: B · **Pruebas**: PF-03, PF-04
-**Depende de**: US1 (botón "Solicitar"), F1B (`rules`, `movements`, `loan_states`)
+**Depende de**: US1 (botón "Solicitar"), F1B (`rules`, `movements`, `loan_states`), F1A (`LoanOut`, lectura de préstamos: T091–T093)
 
 **Goal**: Solicitante registra, consulta y cancela sus solicitudes con todas las reglas V1–V7.
 
 **Independent Test**: `est.ana` crea solicitud válida → PENDIENTE recuperable; casos inválidos (fechas, propósito, solo docentes, `est.luis` vencido, límite) → rechazados sin persistir.
 
-- [ ] T045 [P] [US2] [A] Crear en `backend/app/schemas/loan.py` la sección de A: `LoanCreate{resource_id, start_at, end_at, purpose(10–500)}` con validador `end_at > start_at`, `LoanOut` completo según contrato (incluye `effective_status`, `days_overdue`, refs de usuarios), `LoanFilters`, `CancelIn{note?}`
-- [ ] T046 [US2] [A] Implementar en `backend/app/services/loans.py`: `create_loan` (rol SOLICITANTE; `lock_user` + `rules.check_can_request`; estado PENDIENTE; `movements.record(None→PENDIENTE)`), `list_loans` (SOLICITANTE solo propias; filtros `status` incl. `VENCIDA`, `resource_id`, `category_id`, `requester_id` solo R/C, `from`/`to`, paginación, `sort=-created_at`), `get_loan` (404 si no existe o es ajena para SOLICITANTE), `cancel_loan` (dueño; `loan_states.assert_transition('cancel')`; movimiento)
-- [ ] T047 [US2] [A] Implementar en `backend/app/api/loans.py` (sección A): `POST /api/loans` (201), `GET /api/loans`, `GET /api/loans/{id}`, `POST /api/loans/{id}/cancel`
+- [ ] T045 [P] [US2] [A] Agregar en `backend/app/schemas/loan.py` (sección A): `LoanCreate{resource_id, start_at, end_at, purpose(10–500)}` con validador `end_at > start_at` y `CancelIn{note?}` (`LoanOut` y `LoanFilters` ya están en T091)
+- [ ] T046 [US2] [A] Implementar en `backend/app/services/loans.py`: `create_loan` (rol SOLICITANTE; `lock_user` + `rules.check_can_request`; estado PENDIENTE; `movements.record(None→PENDIENTE)`) y `cancel_loan` (`list_loans`/`get_loan` ya están en T092) (dueño; `loan_states.assert_transition('cancel')`; movimiento)
+- [ ] T047 [US2] [A] Implementar en `backend/app/api/loans.py` (sección A): `POST /api/loans` (201) y `POST /api/loans/{id}/cancel` (los GET ya están en T093)
 - [ ] T048 [P] [US2] [A] Implementar `frontend/src/pages/requests/NewRequestPage.tsx`: recurso preseleccionado desde catálogo, inicio/fin (`DateTimeField`), propósito con contador; validación en cliente (fin > inicio, no pasado, duración ≤ máx. categoría, propósito 10–500) y errores del servidor por campo con `ErrorAlert`
 - [ ] T049 [P] [US2] [A] Implementar `frontend/src/pages/requests/MyRequestsPage.tsx`: lista paginada propia con `StatusBadge`, motivo de rechazo visible, botón "Cancelar" (PENDIENTE/APROBADA) con `ConfirmDialog`, enlace a `/prestamos/:id`
+- [ ] T095 [US2] [A] Implementar `GET /api/loans/{id}/movements` en `backend/app/api/loans.py` (S dueño / R / C; orden `created_at` asc; 404 si ajeno para S) y `MovementOut` en `backend/app/schemas/movement.py`; movido desde US5 para descargar a B
+- [ ] T096 [P] [US2] [A] Implementar `frontend/src/pages/loans/MovementTimeline.tsx` (actor, fecha, estado anterior→nuevo, nota); B lo integra en `LoanDetailPage` (T067)
 - [ ] T050 [US2] [A] Documentar PF-03 (solicitud válida almacenada y recuperable, 201) y PF-04 (datos inválidos 422 / `TEACHER_ONLY` 403 / `OVERDUE_BLOCK` 409 / `LIMIT_REACHED` 409, verificando con consulta SQL que no se persistió) en `docs/pruebas.md`, `docs/pruebas/prestamos.http` y `evidencias/PF-03/`, `evidencias/PF-04/`
 - [ ] T051 [US2] [A] Actualizar fila CA-02 en `docs/trazabilidad.md` y abrir PR (Revisor: B)
 
@@ -144,13 +150,13 @@ cada historia. Las pruebas automatizadas son **opcionales** y están en la fase 
 ## Phase 5: User Story 3 — Evaluar solicitudes (P1) · CA-03
 
 **Owner**: B · **Rama**: `feat/us3-evaluacion` · **Revisor**: A · **Pruebas**: PF-05, PF-06
-**Depende de**: F1A/F1B (usa solicitudes PENDIENTES semilla; no espera a US2)
+**Depende de**: F1A/F1B (usa solicitudes PENDIENTES semilla y `LoanOut`/`GET /loans` de F1A: T091–T093; no espera a US2)
 
 **Goal**: El responsable aprueba (con revalidación atómica) o rechaza con motivo.
 
 **Independent Test**: `resp.carlos` aprueba una PENDIENTE y rechaza otra con motivo; aprobar la segunda PENDIENTE solapada → 409 `OVERLAP`; `est.ana` intenta aprobar → 403.
 
-- [ ] T052 [P] [US3] [B] Agregar en `backend/app/schemas/loan.py` (sección B): `ApproveIn{note?}`, `RejectIn{reason(5–500)}`, `DeliverIn{delivered_at?, checkout_condition(1–500)}`, `ReturnIn{returned_at?, return_condition, return_notes?(≤1000)}` con validador "return_notes obligatorio si CON_DANO"; y `MovementOut` en `backend/app/schemas/movement.py`
+- [ ] T052 [P] [US3] [B] Agregar en `backend/app/schemas/loan.py` (sección B): `ApproveIn{note?}`, `RejectIn{reason(5–500)}`, `DeliverIn{delivered_at?, checkout_condition(1–500)}`, `ReturnIn{returned_at?, return_condition, return_notes?(≤1000)}` con validador "return_notes obligatorio si CON_DANO"
 - [ ] T053 [US3] [B] Implementar en `backend/app/services/loan_workflow.py`: `approve_loan` (RESPONSABLE; `assert_transition('approve')`; si `start_at <= now` → 409 `START_PASSED`; `lock_resource` + `lock_user`; `rules.check_can_request(..., exclude_loan_id=loan.id)` revalidando V3–V7; set `approved_by/approved_at`; movimiento; capturar `IntegrityError` con `translate_integrity_error` → 409 `OVERLAP`) y `reject_loan` (desde PENDIENTE o APROBADA; `rejection_reason` obligatorio; movimiento con motivo)
 - [ ] T054 [US3] [B] Implementar en `backend/app/api/loans.py` (sección B): `POST /api/loans/{id}/approve` y `POST /api/loans/{id}/reject` con `require_roles("RESPONSABLE")`, devolviendo `LoanOut`
 - [ ] T055 [US3] [B] Implementar `frontend/src/pages/review/ReviewInboxPage.tsx` (`/gestion`): pestañas PENDIENTES / APROBADAS por entregar / ACTIVAS-VENCIDAS; para cada PENDIENTE muestra solicitante, recurso, periodo, propósito y conflictos (de `GET /resources/{id}` busy_periods); acciones Aprobar y Rechazar (motivo obligatorio vía `ConfirmDialog`); error `OVERLAP` mostrado claramente
@@ -182,16 +188,16 @@ cada historia. Las pruebas automatizadas son **opcionales** y están en la fase 
 ## Phase 7: User Story 5 — Devolución e historial (P1) · CA-05
 
 **Owner**: B · **Rama**: `feat/us5-devolucion` · **Revisor**: A · **Pruebas**: PF-10
-**Depende de**: US4
+**Depende de**: US4, T095–T096 (A)
 
 **Goal**: Cerrar préstamos ACTIVOS/VENCIDOS, actualizar disponibilidad y consultar el historial de movimientos.
 
 **Independent Test**: Devolver un ACTIVO en BUENO → DEVUELTA y recurso disponible; devolver con CON_DANO → recurso EN_REVISION; historial muestra creación→aprobación→entrega→devolución.
 
 - [ ] T064 [US5] [B] Implementar `return_loan` en `backend/app/services/loan_workflow.py`: RESPONSABLE; `assert_transition('return')` (ACTIVA incl. vencida); `returned_at` por defecto now y `>= delivered_at`; `is_late = returned_at > end_at`; `return_notes` obligatorio si `CON_DANO`; si `CON_DANO` → `resource.status = EN_REVISION` (anotado en el movimiento); set `received_by`; movimiento ACTIVA→DEVUELTA
-- [ ] T065 [US5] [B] Agregar `POST /api/loans/{id}/return` y `GET /api/loans/{id}/movements` (S dueño / R / C; orden `created_at` asc; 404 si ajeno para S) en `backend/app/api/loans.py` (sección B)
+- [ ] T065 [US5] [B] Agregar `POST /api/loans/{id}/return` en `backend/app/api/loans.py` (sección B) (`GET .../movements` lo implementa A en T095)
 - [ ] T066 [P] [US5] [B] Implementar `frontend/src/pages/loans/ReturnForm.tsx` (fecha real, condición BUENO/CON_DANO, observaciones obligatorias si daño, aviso "el recurso pasará a revisión")
-- [ ] T067 [P] [US5] [B] Implementar `frontend/src/pages/loans/MovementTimeline.tsx` e integrarlo en `LoanDetailPage` (actor, fecha, estado anterior→nuevo, nota)
+- [ ] T067 [P] [US5] [B] Integrar `MovementTimeline` (de A, T096) en `LoanDetailPage`
 - [ ] T068 [US5] [B] Documentar PF-10 (devolución persistida, recurso disponible de nuevo, historial consultable; caso CON_DANO → EN_REVISION; devolver un DEVUELTA → 409) en `docs/pruebas.md`, `docs/pruebas/prestamos.http`, `evidencias/PF-10/`
 - [ ] T069 [US5] [B] Actualizar fila CA-05 en `docs/trazabilidad.md` y abrir PR (Revisor: A)
 
@@ -221,7 +227,7 @@ cada historia. Las pruebas automatizadas son **opcionales** y están en la fase 
 ## Phase 9: User Story 7 — Administración de recursos (P2)
 
 **Owner**: A · **Rama**: `feat/us7-recursos` · **Revisor**: B · **Pruebas**: casos adicionales PF-13, PF-14
-**Depende de**: US1 (reutiliza schemas/servicio de recursos). *Orden de trabajo de A: US1 → US7 → US2 → US6.*
+**Depende de**: US1 (reutiliza schemas/servicio de recursos). *Orden de trabajo de A: F1A → US1 → US2 → US7 → US6.*
 
 **Goal**: El responsable registra y edita recursos y su estado operativo.
 
@@ -243,7 +249,7 @@ cada historia. Las pruebas automatizadas son **opcionales** y están en la fase 
 
 - [ ] T082 [AB] Ejecutar PF-12 (flujo integral interfaz–API–BD): A como `est.ana` crea solicitud desde la UI → B como `resp.carlos` aprueba, entrega y recibe devolución → verificar en BD `loans` y 4 `loan_movements`; documentar en `docs/pruebas.md` con capturas en `evidencias/PF-12/` (incluye video o secuencia de capturas)
 - [ ] T083 [P] [B] Redactar `docs/diseno.md` (Act. 3): diagrama de componentes (frontend/API/BD), capas del backend, modelo ER (de data-model.md), máquina de estados, especificación de API (tabla + ejemplos request/response/errores, enlace a `/docs`), aplicación de reglas y permisos, prototipos/capturas de pantallas, justificación de tecnologías y correspondencia con RF
-- [ ] T084 [P] [A] Completar `docs/trazabilidad.md` (Act. 7): CA-01…CA-06 → RF → US → archivos/rutas → PR (#números reales) → PF-XX
+- [ ] T084 [P] [B] Completar `docs/trazabilidad.md` (Act. 7): CA-01…CA-06 → RF → US → archivos/rutas → PR (#números reales) → PF-XX
 - [ ] T085 [A] Redactar `README.md` con las 9 secciones de la guía (información general e integrantes con aportes, descripción, requisitos, arquitectura, configuración del entorno siguiendo `quickstart.md`, tabla de endpoints reales, pruebas y evidencias, control de versiones con enlaces a PR, conclusiones y limitaciones); B aporta secciones 4 y 6 mediante PR propio
 - [ ] T086 [P] [AB] Revisión de seguridad: `git grep` de secretos, confirmar `.env` ignorado, errores 500 sin trazas, todos los endpoints con rol correcto según tabla de `contracts/api.md`
 - [ ] T087 [AB] Ejecutar los escenarios Q1–Q11 de `quickstart.md` desde un clon limpio siguiendo solo el README (reproducibilidad) y corregir lo que falle
@@ -261,7 +267,7 @@ cada historia. Las pruebas automatizadas son **opcionales** y están en la fase 
 ### Phase Dependencies
 
 - **F0 (Phase 1)** → bloquea todo (SYNC-0).
-- **F1A ∥ F1B (Phase 2)** → independientes entre sí; ambas bloquean historias (SYNC-1).
+- **F1A ∥ F1B (Phase 2)** → B publica primero el PR base (T094: `database`, modelos, migración, usuarios semilla); A lo necesita para probar login. Ambas bloquean historias (SYNC-1).
   - Excepción: T013 (`deps.py`) usa el modelo `User` (T025): A puede programarlo contra la interfaz acordada y probarlo tras el merge de F1B, o B prioriza T023–T025 primero.
 - **Historias**: dos pistas paralelas tras SYNC-1.
 - **Phase 10** → tras SYNC-2.
@@ -269,27 +275,27 @@ cada historia. Las pruebas automatizadas son **opcionales** y están en la fase 
 ### Pistas por persona
 
 ```text
-A: F1A ─► US1 ─► US7 ─► US2 ─► US6 ─┐
+A: F1A(+LoanOut) ─► US1 ─► US2 ─► US7 ─► US6 ─┐
                                      ├─► SYNC-2 ─► Cierre (AB)
-B: F1B ─► US3 ─► US4 ─► US5 ─────────┘
+B: F1B-base ─► F1B ─► US3 ─► US4 ─► US5 ───────┘
 ```
 
 ### Dependencias entre historias
 
 - US2 (A) → necesita US1 (A) para el botón "Solicitar"; usa `rules` de F1B.
-- US3 (B) → no depende de US2: trabaja con PENDIENTES semilla.
+- US3 (B) → no depende de US2, pero sí de `LoanOut`/`GET /loans` (T091–T093, F1A); trabaja con PENDIENTES semilla.
 - US4 (B) → US3. US5 (B) → US4.
 - US6 (A) → solo F1B (datos semilla); se valida al final con datos reales.
-- US7 (A) → US1.
+- US7 (A) → US1. US5 (B) → `MovementTimeline`/`GET movements` de A (T095–T096, en US2).
 
 ### Archivos compartidos (coordinar para evitar conflictos)
 
 | Archivo | Sección A | Sección B | Regla |
 |---|---|---|---|
 | `backend/app/api/loans.py` | POST/GET/cancel | approve/reject/deliver/return/movements | B crea sus funciones al final del archivo; rebase antes de PR |
-| `backend/app/schemas/loan.py` | LoanCreate, LoanOut, filtros | ApproveIn…ReturnIn | `LoanOut` lo define A en US2; B lo importa (si B empieza antes, A adelanta `LoanOut` en un PR pequeño) |
+| `backend/app/schemas/loan.py` | LoanOut, filtros (F1A); LoanCreate (US2) | ApproveIn…ReturnIn | `LoanOut` lo define A en F1A (T091); B lo importa |
 | `frontend/src/api/types.ts` | creado en F1A | — | cambios solo con actualización de `contracts/api.md` |
-| `docs/trazabilidad.md`, `docs/pruebas.md` | filas CA-01/02/06, PF de A | filas CA-03/04/05, PF de B | cada uno edita solo sus filas |
+| `docs/trazabilidad.md`, `docs/pruebas.md` | filas CA-01/02/06, PF de A | filas CA-03/04/05, PF de B | cada uno edita solo sus filas; cada PR añade su prueba como `docs/pruebas/PF-XX.md` y se unifican en `docs/pruebas.md` al cierre |
 
 ### Within Each User Story
 
