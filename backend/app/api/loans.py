@@ -10,10 +10,13 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.deps import get_current_user
+from app.deps import get_current_user, require_roles
 from app.models.user import User
 from app.schemas.common import Page
-from app.schemas.loan import EffectiveStatus, LoanFilters, LoanOut
+from app.schemas.loan import (
+    ApproveIn, DeliverIn, EffectiveStatus, LoanFilters, LoanOut, RejectIn, ReturnIn,
+)
+from app.services import loan_workflow as workflow
 from app.services import loans as loan_service
 
 router = APIRouter(prefix="/loans", tags=["Préstamos"])
@@ -49,4 +52,42 @@ def get_loan(
 
 
 # ---------------------------------------------------------------- Sección B
-# (Persona B agrega aquí approve / reject / deliver / return)
+@router.post("/{loan_id}/approve", response_model=LoanOut, summary="Aprobar una solicitud")
+def approve(
+    loan_id: int,
+    data: ApproveIn | None = None,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_roles("RESPONSABLE")),
+) -> LoanOut:
+    loan = workflow.approve_loan(db, user, loan_id, data or ApproveIn())
+    return loan_service.to_loan_out(loan)
+
+
+@router.post("/{loan_id}/reject", response_model=LoanOut, summary="Rechazar con motivo")
+def reject(
+    loan_id: int,
+    data: RejectIn,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_roles("RESPONSABLE")),
+) -> LoanOut:
+    return loan_service.to_loan_out(workflow.reject_loan(db, user, loan_id, data))
+
+
+@router.post("/{loan_id}/deliver", response_model=LoanOut, summary="Registrar la entrega")
+def deliver(
+    loan_id: int,
+    data: DeliverIn,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_roles("RESPONSABLE")),
+) -> LoanOut:
+    return loan_service.to_loan_out(workflow.deliver_loan(db, user, loan_id, data))
+
+
+@router.post("/{loan_id}/return", response_model=LoanOut, summary="Registrar la devolución")
+def return_(
+    loan_id: int,
+    data: ReturnIn,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_roles("RESPONSABLE")),
+) -> LoanOut:
+    return loan_service.to_loan_out(workflow.return_loan(db, user, loan_id, data))
