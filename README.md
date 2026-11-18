@@ -290,7 +290,7 @@ el flujo completo con las consultas SQL ([`PF-12`](evidencias/PF-12/salida-sql.t
 ([`interfaz/`](evidencias/interfaz), `PF-01`, `PF-03`, `PF-12`) y el rendimiento con 200+ recursos y 2.000+
 operaciones ([`SC-008`](evidencias/SC-008-rendimiento.txt)). El CI ejecuta la suite automatizada en cada cambio.
 
-Matriz criterio → requisito → implementación → PR → prueba en [`docs/trazabilidad.md`](docs/trazabilidad.md).
+Matriz criterio → requisito → implementación → PR → prueba en [`docs/trazabilidad.md`](docs/trazabilidad.md). Guion para la defensa en [`docs/guion-sustentacion.md`](docs/guion-sustentacion.md).
 
 ## 8. Control de versiones
 
