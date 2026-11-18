@@ -14,8 +14,10 @@ from app.deps import get_current_user, require_roles
 from app.models.user import User
 from app.schemas.common import Page
 from app.schemas.loan import (
-    ApproveIn, DeliverIn, EffectiveStatus, LoanFilters, LoanOut, RejectIn, ReturnIn,
+    ApproveIn, CancelIn, DeliverIn, EffectiveStatus, LoanCreate, LoanFilters, LoanOut,
+    RejectIn, ReturnIn,
 )
+from app.schemas.movement import MovementOut
 from app.services import loan_workflow as workflow
 from app.services import loans as loan_service
 
@@ -49,6 +51,30 @@ def get_loan(
     loan_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)
 ) -> LoanOut:
     return loan_service.to_loan_out(loan_service.get_loan(db, user, loan_id))
+
+
+@router.post("", response_model=LoanOut, status_code=201, summary="Registrar solicitud")
+def create_loan(
+    data: LoanCreate, db: Session = Depends(get_db), user: User = Depends(get_current_user)
+) -> LoanOut:
+    return loan_service.to_loan_out(loan_service.create_loan(db, user, data))
+
+
+@router.post("/{loan_id}/cancel", response_model=LoanOut, summary="Cancelar solicitud")
+def cancel_loan(
+    loan_id: int,
+    data: CancelIn | None = None,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> LoanOut:
+    return loan_service.to_loan_out(loan_service.cancel_loan(db, user, loan_id, data or CancelIn()))
+
+
+@router.get("/{loan_id}/movements", response_model=list[MovementOut], summary="Historial de movimientos")
+def list_movements(
+    loan_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)
+) -> list[MovementOut]:
+    return loan_service.list_movements(db, user, loan_id)
 
 
 # ---------------------------------------------------------------- Sección B

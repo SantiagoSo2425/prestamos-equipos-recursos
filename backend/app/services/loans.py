@@ -11,11 +11,16 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.errors import AppError
+from app.domain import loan_states
+from app.models.enums import LoanStatus
 from app.models.loan import Loan
+from app.models.movement import LoanMovement
 from app.models.resource import Resource
 from app.models.user import User
 from app.schemas.common import Page
-from app.schemas.loan import LoanFilters, LoanOut
+from app.schemas.loan import CancelIn, LoanCreate, LoanFilters, LoanOut
+from app.schemas.movement import MovementOut
+from app.services import movements, rules
 
 _SORTS = {
     "created_at": Loan.created_at.asc(),
@@ -138,3 +143,64 @@ def get_loan(db: Session, user: User, loan_id: int) -> Loan:
     if loan is None or (_role(user) == "SOLICITANTE" and loan.requester_id != user.id):
         raise AppError(404, "NOT_FOUND", "La operación no existe.")
     return loan
+
+
+# ---------------------------------------------------------------- US2: crear y cancelar
+def create_loan(db: Session, user: User, data: LoanCreate) -> Loan:
+    if _role(user) != "SOLICITANTE":
+        raise AppError(403, "FORBIDDEN", "Solo un solicitante puede registrar solicitudes.")
+    resource = db.get(Resource, data.resource_id)
+    if resource is None:
+        raise AppError(404, "NOT_FOUND", "El recurso no existe.")
+
+    rules.lock_user(db, user.id)  # serializa solicitudes simultáneas del mismo usuario
+    rules.check_can_request(db, user, resource, data.start_at, data.end_at)  # V1–V7
+
+    loan = Loan(
+        resource_id=resource.id,
+        requester_id=user.id,
+        start_at=data.start_at,
+        end_at=data.end_at,
+        purpose=data.purpose,
+        status=LoanStatus.PENDIENTE,
+    )
+    db.add(loan)
+    db.flush()
+    movements.record(db, loan, user, None, LoanStatus.PENDIENTE)
+    db.refresh(loan)
+    return loan
+
+
+def cancel_loan(db: Session, user: User, loan_id: int, data: CancelIn) -> Loan:
+    loan = get_loan(db, user, loan_id)  # 404 si no existe o es ajena
+    if _role(user) != "SOLICITANTE":
+        raise AppError(403, "FORBIDDEN", "Solo el solicitante puede cancelar su solicitud.")
+    loan_states.assert_transition(loan, "cancel", user)
+    previous = loan.status
+    loan.status = LoanStatus.CANCELADA
+    db.flush()
+    movements.record(db, loan, user, previous, LoanStatus.CANCELADA, data.note)
+    db.refresh(loan)
+    return loan
+
+
+# ---------------------------------------------------------------- US2: historial
+def list_movements(db: Session, user: User, loan_id: int) -> list[MovementOut]:
+    loan = get_loan(db, user, loan_id)  # aplica la regla de propiedad (404 si ajena)
+    rows = db.scalars(
+        select(LoanMovement)
+        .options(joinedload(LoanMovement.actor))
+        .where(LoanMovement.loan_id == loan.id)
+        .order_by(LoanMovement.created_at, LoanMovement.id)
+    ).unique().all()
+    return [
+        MovementOut(
+            id=m.id,
+            actor={"id": m.actor.id, "username": m.actor.username, "full_name": m.actor.full_name},
+            from_status=_val(m.from_status) if m.from_status else None,
+            to_status=_val(m.to_status),
+            note=m.note,
+            created_at=m.created_at,
+        )
+        for m in rows
+    ]

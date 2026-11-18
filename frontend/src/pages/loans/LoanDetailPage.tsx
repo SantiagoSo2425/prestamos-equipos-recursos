@@ -9,6 +9,7 @@ import ErrorAlert from '../../components/ErrorAlert'
 import StatusBadge from '../../components/StatusBadge'
 import { formatDateTime } from '../../utils/format'
 import DeliverForm from './DeliverForm'
+import MovementTimeline from './MovementTimeline'
 import ReturnForm from './ReturnForm'
 
 type Mode = null | 'reject' | 'deliver' | 'return'
@@ -124,6 +125,9 @@ export default function LoanDetailPage() {
           )}
         </dl>
       </div>
+
+      <h2>Historial</h2>
+      <MovementTimeline loanId={loan.id} />
 
       {isManager && (
         <div className="actions" style={{ justifyContent: 'flex-start' }}>
