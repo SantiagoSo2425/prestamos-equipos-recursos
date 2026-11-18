@@ -1,19 +1,47 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import type { ReactNode } from 'react'
+import { Link, Navigate, Route, Routes } from 'react-router-dom'
+import type { Role } from './api/types'
+import { useAuth } from './auth/AuthContext'
 import LoginPage from './auth/LoginPage'
 import ProtectedRoute from './auth/ProtectedRoute'
-import { useAuth } from './auth/AuthContext'
+import CatalogPage from './pages/catalog/CatalogPage'
+import ResourceDetailPage from './pages/catalog/ResourceDetailPage'
+import DashboardPage from './pages/dashboard/DashboardPage'
+import HistoryPage from './pages/dashboard/HistoryPage'
+import MyRequestsPage from './pages/requests/MyRequestsPage'
+import NewRequestPage from './pages/requests/NewRequestPage'
+import ResourceFormPage from './pages/resources/ResourceFormPage'
 
-// Marcador temporal hasta que cada historia aporte su página.
-function Placeholder({ title }: { title: string }) {
-  const { user, logout } = useAuth()
+// Barra de navegación provisional de la fundación de A; Persona B la reemplaza por
+// <Layout>/<NavBar> (T035) y completa las rutas de evaluación, entrega y detalle (T034).
+function Shell({ children }: { children: ReactNode }) {
+  const { user, logout, hasRole } = useAuth()
   return (
-    <main>
-      <h1>{title}</h1>
-      <p>
-        Sesión: {user?.full_name} ({user?.role})
-      </p>
-      <button onClick={logout}>Cerrar sesión</button>
-    </main>
+    <>
+      <header className="topbar">
+        <nav>
+          <Link to="/catalogo">Catálogo</Link>
+          {hasRole('SOLICITANTE') && <Link to="/mis-solicitudes">Mis solicitudes</Link>}
+          {hasRole('RESPONSABLE', 'COORDINACION') && <Link to="/tablero">Tablero</Link>}
+          {hasRole('COORDINACION') && <Link to="/historial">Historial</Link>}
+        </nav>
+        <span className="muted">
+          {user?.full_name} ({user?.role})
+        </span>
+        <button className="secondary" onClick={logout}>
+          Cerrar sesión
+        </button>
+      </header>
+      {children}
+    </>
+  )
+}
+
+function Guarded({ roles, children }: { roles?: Role[]; children: ReactNode }) {
+  return (
+    <ProtectedRoute roles={roles}>
+      <Shell>{children}</Shell>
+    </ProtectedRoute>
   )
 }
 
@@ -24,25 +52,65 @@ export default function App() {
       <Route
         path="/catalogo"
         element={
-          <ProtectedRoute roles={['SOLICITANTE', 'RESPONSABLE']}>
-            <Placeholder title="Catálogo" />
-          </ProtectedRoute>
+          <Guarded>
+            <CatalogPage />
+          </Guarded>
         }
       />
       <Route
-        path="/gestion"
+        path="/catalogo/:id"
         element={
-          <ProtectedRoute roles={['RESPONSABLE']}>
-            <Placeholder title="Gestión" />
-          </ProtectedRoute>
+          <Guarded>
+            <ResourceDetailPage />
+          </Guarded>
+        }
+      />
+      <Route
+        path="/recursos/nuevo"
+        element={
+          <Guarded roles={['RESPONSABLE']}>
+            <ResourceFormPage />
+          </Guarded>
+        }
+      />
+      <Route
+        path="/recursos/:id/editar"
+        element={
+          <Guarded roles={['RESPONSABLE']}>
+            <ResourceFormPage />
+          </Guarded>
+        }
+      />
+      <Route
+        path="/solicitudes/nueva"
+        element={
+          <Guarded roles={['SOLICITANTE']}>
+            <NewRequestPage />
+          </Guarded>
+        }
+      />
+      <Route
+        path="/mis-solicitudes"
+        element={
+          <Guarded roles={['SOLICITANTE']}>
+            <MyRequestsPage />
+          </Guarded>
         }
       />
       <Route
         path="/tablero"
         element={
-          <ProtectedRoute roles={['RESPONSABLE', 'COORDINACION']}>
-            <Placeholder title="Tablero" />
-          </ProtectedRoute>
+          <Guarded roles={['RESPONSABLE', 'COORDINACION']}>
+            <DashboardPage />
+          </Guarded>
+        }
+      />
+      <Route
+        path="/historial"
+        element={
+          <Guarded roles={['RESPONSABLE', 'COORDINACION']}>
+            <HistoryPage />
+          </Guarded>
         }
       />
       <Route path="*" element={<Navigate to="/login" replace />} />
