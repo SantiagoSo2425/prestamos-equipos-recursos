@@ -113,7 +113,7 @@ frontend/
     ├── components/              # [B] Layout/NavBar por rol, StatusBadge, ErrorAlert, DataTable, DateTimeField, ConfirmDialog
     └── pages/
         ├── catalog/             # [A] CatalogPage, ResourceDetailPage
-        ├── resources/           # [A] ResourceFormPage (admin)
+        ├── resources/           # [A] (retirado: alta y edición ahora en components/ResourceModal.tsx)
         ├── requests/            # [A] NewRequestPage, MyRequestsPage
         ├── review/              # [B] ReviewInboxPage (bandeja /gestion)
         ├── loans/               # [B] LoanDetailPage + historial de movimientos

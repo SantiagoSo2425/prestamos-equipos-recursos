@@ -12,7 +12,6 @@ const MENU: Record<Role, { to: string; label: string; icon: IconName }[]> = {
   RESPONSABLE: [
     { to: '/catalogo', label: 'Catálogo', icon: 'catalog' },
     { to: '/gestion', label: 'Gestión', icon: 'inbox' },
-    { to: '/recursos/nuevo', label: 'Recursos', icon: 'box' },
     { to: '/tablero', label: 'Tablero', icon: 'dashboard' },
   ],
   COORDINACION: [

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { ApiError, apiFetch } from '../../api/client'
@@ -6,6 +7,7 @@ import { useAuth } from '../../auth/AuthContext'
 import EmptyState from '../../components/EmptyState'
 import Icon from '../../components/Icon'
 import PageHeader from '../../components/PageHeader'
+import ResourceModal from '../../components/ResourceModal'
 import { Skeleton } from '../../components/Skeleton'
 import { formatDateTime } from '../../utils/datetime'
 import ApiErrorMessage from '../common/ApiErrorMessage'
@@ -14,6 +16,7 @@ import StatusTag from '../common/StatusTag'
 export default function ResourceDetailPage() {
   const { id } = useParams()
   const { user, hasRole } = useAuth()
+  const [editing, setEditing] = useState(false)
   const query = useQuery({
     queryKey: ['resource', id],
     queryFn: () => apiFetch<ResourceDetail>(`/resources/${id}`),
@@ -67,9 +70,9 @@ export default function ResourceDetailPage() {
               </Link>
             )}
             {hasRole('RESPONSABLE') && (
-              <Link className="btn secondary" to={`/recursos/${r.id}/editar`}>
+              <button className="secondary" onClick={() => setEditing(true)}>
                 <Icon name="edit" size={16} /> Editar
-              </Link>
+              </button>
             )}
           </>
         }
@@ -118,6 +121,7 @@ export default function ResourceDetailPage() {
           </table>
         </div>
       )}
+      {editing && <ResourceModal resource={r} onClose={() => setEditing(false)} />}
     </section>
   )
 }

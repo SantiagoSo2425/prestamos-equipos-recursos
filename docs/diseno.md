@@ -182,7 +182,7 @@ Rutas del frontend y su rol:
 | `/mis-solicitudes` | Solicitudes propias, motivo de rechazo y cancelación | S |
 | `/gestion` | Bandeja de evaluación: pendientes, por entregar, activas y vencidas | R |
 | `/prestamos/:id` | Detalle, historial de movimientos y acciones (aprobar, rechazar, entregar, devolver) | S, R, C |
-| `/recursos/nuevo`, `/recursos/:id/editar` | Alta y edición de recursos | R |
+| Modal «Nuevo recurso» / «Editar» en `/catalogo` y `/catalogo/:id` | Alta y edición de recursos (ventana modal, sin pantalla propia) | R |
 | `/tablero`, `/historial` | Totales, vencidos, uso e historial filtrable | R, C (historial) |
 
 Capturas de las pantallas en `evidencias/` (p. ej. `PF-01/catalogo-est-ana.jpg`,
