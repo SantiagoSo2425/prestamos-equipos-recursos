@@ -70,6 +70,8 @@ identificadores: `FR-0NN` (spec) = `RF-NN` (aquí).
 | RF-36 | Administración de recursos | Los recursos con historial no deben eliminarse; se dan de baja (DADO_DE_BAJA). |
 | RF-37 | Validación y errores | Todas las reglas deben aplicarse en el servidor aunque la petición no provenga de la interfaz; la interfaz además valida y muestra los errores por campo. |
 | RF-38 | Validación y errores | Los mensajes de error deben ser comprensibles y no revelar información interna. |
+| RF-39 | Administración de usuarios | Solo el RESPONSABLE debe poder crear usuarios (nombre, usuario único, código institucional único, rol, tipo si es solicitante y contraseña inicial de al menos 8 caracteres); la contraseña se guarda con hash y nunca se devuelve. |
+| RF-40 | Administración de usuarios | Solo el RESPONSABLE debe poder consultar el listado de usuarios, con búsqueda y filtro por rol. |
 
 ## 4. Requisitos no funcionales
 
