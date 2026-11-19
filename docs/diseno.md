@@ -6,6 +6,8 @@ Documento de diseño del sistema de préstamos de equipos y recursos. Complement
 ([`contracts/api.md`](../specs/001-prestamos-equipos/contracts/api.md)). El detalle de requisitos está en
 [`requisitos.md`](requisitos.md).
 
+> Explicación guiada del repositorio, la base de datos, los usuarios y los ciclos de vida: [`explicacion-sistema.md`](explicacion-sistema.md).
+
 ## 1. Arquitectura de componentes
 
 ```mermaid
@@ -165,6 +167,7 @@ endpoint en [`contracts/api.md`](../specs/001-prestamos-equipos/contracts/api.md
 |---|---|---|---|
 | Catálogo, detalle, categorías | ✅ | ✅ | ✅ |
 | Crear / editar recursos | ❌ | ✅ | ❌ |
+| Crear y listar usuarios | ❌ | ✅ | ❌ |
 | Crear solicitud, cancelar | ✅ (dueño) | ❌ | ❌ |
 | Listar / ver préstamos e historial | ✅ (solo propios) | ✅ | ✅ |
 | Aprobar, rechazar, entregar, devolver | ❌ | ✅ | ❌ |
@@ -212,3 +215,4 @@ Capturas de las pantallas en `evidencias/` (p. ej. `PF-01/catalogo-est-ana.jpg`,
 | RF-31…RF-33 | `services/dashboard.py`, `pages/dashboard/` |
 | RF-34…RF-36 | `services/resources.py` (alta/edición), `pages/resources/` |
 | RF-38 | `errors.py` (mensajes en español, sin información interna) |
+| RF-39, RF-40 | `api/users.py`, `services/users.py`, `schemas/user.py`; interfaz `/usuarios` y modal «Nuevo usuario» |

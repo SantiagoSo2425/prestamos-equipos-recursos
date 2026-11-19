@@ -13,6 +13,7 @@ const MENU: Record<Role, { to: string; label: string; icon: IconName }[]> = {
     { to: '/catalogo', label: 'Catálogo', icon: 'catalog' },
     { to: '/gestion', label: 'Gestión', icon: 'inbox' },
     { to: '/tablero', label: 'Tablero', icon: 'dashboard' },
+    { to: '/usuarios', label: 'Usuarios', icon: 'users' },
   ],
   COORDINACION: [
     { to: '/tablero', label: 'Tablero', icon: 'dashboard' },

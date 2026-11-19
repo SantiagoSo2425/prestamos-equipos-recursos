@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import auth, categories, dashboard, loans, resources
+from app.api import auth, categories, dashboard, loans, resources, users
 from app.config import get_settings
 from app.errors import register_error_handlers
 
@@ -29,6 +29,7 @@ app.include_router(categories.router, prefix="/api")
 app.include_router(resources.router, prefix="/api")
 app.include_router(loans.router, prefix="/api")
 app.include_router(dashboard.router, prefix="/api")
+app.include_router(users.router, prefix="/api")
 
 
 @app.get("/api/health", tags=["Sistema"], summary="Estado del servicio")

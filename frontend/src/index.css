@@ -1406,3 +1406,9 @@ textarea:disabled {
   color: var(--text-soft);
   cursor: not-allowed;
 }
+
+/* El botón nativo de Edge para ver la contraseña duplica el nuestro. */
+input[type='password']::-ms-reveal,
+input[type='password']::-ms-clear {
+  display: none;
+}

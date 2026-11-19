@@ -65,7 +65,7 @@ acuerdos y pendientes) debe ir en [`docs/requisitos.md`](docs/requisitos.md#1-re
 está registrado:** hoy el documento contiene las preguntas previstas y los supuestos de trabajo, marcados como
 *sin confirmar* (duración máxima por categoría 72/48/24/72 h y límites de 2 y 5 préstamos simultáneos).
 
-**Requisitos priorizados** (detalle RF-01…RF-38 y RNF-01…RNF-07 en `docs/requisitos.md`)
+**Requisitos priorizados** (detalle RF-01…RF-40 y RNF-01…RNF-07 en `docs/requisitos.md`)
 
 | Prioridad | Historia | Criterio | Requisitos |
 |---|---|---|---|
@@ -131,7 +131,7 @@ erDiagram
 | TanStack Query | Caché e invalidación de consultas tras cada operación |
 
 Diagramas completos, máquina de estados, reglas V1–V7, matriz de permisos y correspondencia con los requisitos en
-[`docs/diseno.md`](docs/diseno.md).
+[`docs/diseno.md`](docs/diseno.md). Para exponerlo: organización del repositorio, modelo de datos, usuarios y ciclos de vida en [`docs/explicacion-sistema.md`](docs/explicacion-sistema.md).
 
 ## 5. Configuración del entorno
 
@@ -195,6 +195,8 @@ OpenAPI generado por la aplicación. Además existe `GET /api/health`.
 |---|---|---|---|---|
 | POST | `/api/auth/login` | público | Inicia sesión y devuelve el JWT | RF-01 |
 | GET | `/api/auth/me` | todos | Usuario autenticado | RF-02 |
+| GET | `/api/users` | RESPONSABLE | Listar usuarios (búsqueda y filtro por rol) | RF-40 |
+| POST | `/api/users` | RESPONSABLE | Crear usuario | RF-39 |
 | GET | `/api/categories` | todos | Categorías y duración máxima | RF-05 |
 | GET | `/api/resources` | todos | Catálogo con disponibilidad y filtros | RF-05…RF-07 |
 | GET | `/api/resources/{id}` | todos | Detalle y periodos ocupados | RF-08 |
