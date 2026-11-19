@@ -7,6 +7,7 @@ import ProtectedRoute from './auth/ProtectedRoute'
 import { HOME_BY_ROLE } from './auth/roles'
 import Layout from './components/Layout'
 import CatalogPage from './pages/catalog/CatalogPage'
+import UsersPage from './pages/users/UsersPage'
 import ResourceDetailPage from './pages/catalog/ResourceDetailPage'
 import DashboardPage from './pages/dashboard/DashboardPage'
 import HistoryPage from './pages/dashboard/HistoryPage'
@@ -44,6 +45,7 @@ export default function App() {
       <Route path="/mis-solicitudes" element={guarded([S], <MyRequestsPage />)} />
       <Route path="/gestion" element={guarded([R], <ReviewInboxPage />)} />
       <Route path="/prestamos/:id" element={guarded([S, R, C], <LoanDetailPage />)} />
+      <Route path="/usuarios" element={guarded([R], <UsersPage />)} />
       <Route path="/tablero" element={guarded([R, C], <DashboardPage />)} />
       <Route path="/historial" element={guarded([R, C], <HistoryPage />)} />
       <Route path="*" element={<Navigate to="/" replace />} />

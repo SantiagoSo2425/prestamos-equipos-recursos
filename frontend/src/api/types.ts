@@ -26,6 +26,11 @@ export interface User extends UserRef {
   institutional_id: string
 }
 
+export interface UserAdmin extends User {
+  is_active: boolean
+  created_at: string
+}
+
 export interface Category {
   id: number
   name: string
